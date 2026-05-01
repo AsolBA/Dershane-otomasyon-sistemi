@@ -1,0 +1,10 @@
+{
+  "name": "web",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "echo \"Web skeleton ready\"",
+    "build": "echo \"Configure web build tool\"",
+    "lint": "echo \"No web linter configured yet\""
+  }
+}

@@ -1,0 +1,22 @@
+# Dershane Otomasyon Sistemi
+
+Bu repo, dershane otomasyon projesinin monorepo yapisini icerir.
+
+## Klasorler
+
+- `backend`: Node.js API ve PostgreSQL baglantisi
+- `web`: React tabanli yonetim paneli
+- `mobile`: React Native tabanli ogrenci/veli uygulamasi
+- `docs`: analiz, UML ve teknik notlar
+
+## Ilk Kurulum
+
+1. `npm install`
+2. `npm run dev:backend`
+3. `npm run dev:web`
+4. `npm run dev:mobile`
+
+## Roller
+
+- Oğuz: frontend + mobile
+- Emirhan: database + backend
