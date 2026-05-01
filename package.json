@@ -1,0 +1,16 @@
+{
+  "name": "dershane-otomasyon",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "backend",
+    "web",
+    "mobile"
+  ],
+  "scripts": {
+    "dev:backend": "npm run dev -w backend",
+    "dev:web": "npm run dev -w web",
+    "dev:mobile": "npm run dev -w mobile",
+    "lint": "npm run lint -ws"
+  }
+}

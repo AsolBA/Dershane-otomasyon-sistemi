@@ -1,0 +1,9 @@
+{
+  "name": "mobile",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "echo \"Mobile skeleton ready\"",
+    "lint": "echo \"No mobile linter configured yet\""
+  }
+}
