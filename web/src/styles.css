@@ -1,0 +1,40 @@
+:root {
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #f4f6f8;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: 100vh;
+}
+
+.sidebar {
+  background: #1f2937;
+  color: #fff;
+  padding: 24px 16px;
+}
+
+.sidebar a {
+  display: block;
+  margin-top: 12px;
+  color: #d1d5db;
+  text-decoration: none;
+}
+
+.sidebar a.active {
+  color: #fff;
+  font-weight: 600;
+}
+
+.content {
+  padding: 24px;
+}
