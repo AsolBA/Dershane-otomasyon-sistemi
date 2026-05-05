@@ -10,28 +10,37 @@ VALUES
 ON CONFLICT (name) DO NOTHING;
 
 INSERT INTO users (role_id, first_name, last_name, email, phone, password_hash)
-SELECT r.id, 'Admin', 'User', 'admin@dershane.local', '5550000000', '$2a$10$9s1QLOvQByDqswCC0fA6xOkqZZ91Ajn8vgbf4OD8UshQQ5mX8n9IS'
+SELECT r.id, 'Admin', 'User', 'admin@dershane.local', '5550000000', 'seed_will_override'
 FROM roles r
 WHERE r.name = 'admin'
 ON CONFLICT (email) DO NOTHING;
 
 INSERT INTO users (role_id, first_name, last_name, email, phone, password_hash)
-SELECT r.id, 'Ayse', 'Yilmaz', 'ayse.teacher@dershane.local', '5551111111', '$2a$10$9s1QLOvQByDqswCC0fA6xOkqZZ91Ajn8vgbf4OD8UshQQ5mX8n9IS'
+SELECT r.id, 'Ayse', 'Yilmaz', 'ayse.teacher@dershane.local', '5551111111', 'seed_will_override'
 FROM roles r
 WHERE r.name = 'teacher'
 ON CONFLICT (email) DO NOTHING;
 
 INSERT INTO users (role_id, first_name, last_name, email, phone, password_hash)
-SELECT r.id, 'Fatma', 'Kaya', 'fatma.parent@dershane.local', '5552222222', '$2a$10$9s1QLOvQByDqswCC0fA6xOkqZZ91Ajn8vgbf4OD8UshQQ5mX8n9IS'
+SELECT r.id, 'Fatma', 'Kaya', 'fatma.parent@dershane.local', '5552222222', 'seed_will_override'
 FROM roles r
 WHERE r.name = 'parent'
 ON CONFLICT (email) DO NOTHING;
 
 INSERT INTO users (role_id, first_name, last_name, email, phone, password_hash)
-SELECT r.id, 'Mehmet', 'Demir', 'mehmet.student@dershane.local', '5553333333', '$2a$10$9s1QLOvQByDqswCC0fA6xOkqZZ91Ajn8vgbf4OD8UshQQ5mX8n9IS'
+SELECT r.id, 'Mehmet', 'Demir', 'mehmet.student@dershane.local', '5553333333', 'seed_will_override'
 FROM roles r
 WHERE r.name = 'student'
 ON CONFLICT (email) DO NOTHING;
+
+UPDATE users
+SET password_hash = crypt('Admin123!', gen_salt('bf', 10))
+WHERE email IN (
+  'admin@dershane.local',
+  'ayse.teacher@dershane.local',
+  'fatma.parent@dershane.local',
+  'mehmet.student@dershane.local'
+);
 
 INSERT INTO teachers (user_id, branch)
 SELECT u.id, 'Matematik'
