@@ -1,7 +1,7 @@
 import { sendError } from "../utils/api-response.js";
 
 export function notFoundHandler(_req, res) {
-  return sendError(res, 404, "ROUTE_NOT_FOUND", "Istenen endpoint bulunamadi.");
+  return sendError(res, 404, "ROUTE_NOT_FOUND", null, "Istenen endpoint bulunamadi.");
 }
 
 export function errorHandler(error, _req, res, _next) {
