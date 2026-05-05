@@ -6,6 +6,16 @@
   "scripts": {
     "dev": "node src/index.js",
     "start": "node src/index.js",
-    "lint": "echo \"No backend linter configured yet\""
+    "lint": "echo \"No backend linter configured yet\"",
+    "db:migrate": "node scripts/migrate.js",
+    "db:seed": "node scripts/seed.js",
+    "db:reset": "node scripts/reset.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.16.3"
   }
 }

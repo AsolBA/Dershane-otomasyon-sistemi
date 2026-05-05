@@ -16,6 +16,12 @@ Bu repo, dershane otomasyon projesinin monorepo yapisini icerir.
 3. `npm run dev:web`
 4. `npm run dev:mobile`
 
+## Docker ile Calistirma
+
+1. `backend/.env.example` dosyasini `backend/.env` olarak kopyalayin.
+2. Kök dizindeki `.env.example` dosyasini `.env` olarak kopyalayin.
+3. `docker compose up --build` komutunu calistirin.
+
 ## Roller
 
 - Oğuz: frontend + mobile
