@@ -1,21 +1,30 @@
-import dotenv from "dotenv";
 import express from "express";
-
-dotenv.config();
+import { config } from "./config.js";
+import routes from "./routes.js";
+import { errorHandler, notFoundHandler } from "./middlewares/error-handler.js";
+import { sendSuccess } from "./utils/api-response.js";
+import { db } from "./db.js";
 
 const app = express();
-const PORT = Number(process.env.PORT || 4000);
 
 app.use(express.json());
 
 app.get("/health", (_req, res) => {
-  res.status(200).json({
-    success: true,
-    data: { status: "ok" },
-    message: "Backend is running",
-  });
+  return sendSuccess(res, { status: "ok" }, "Backend is running");
 });
 
-app.listen(PORT, () => {
-  console.log(`Backend running on port ${PORT}`);
+app.use("/api", routes);
+app.use(notFoundHandler);
+app.use(errorHandler);
+
+async function start() {
+  await db.query("SELECT 1");
+  app.listen(config.port, () => {
+    console.log(`Backend running on port ${config.port}`);
+  });
+}
+
+start().catch((error) => {
+  console.error("Startup error:", error);
+  process.exit(1);
 });
