@@ -6,6 +6,13 @@
   "scripts": {
     "dev": "node src/index.js",
     "start": "node src/index.js",
-    "lint": "echo \"No backend linter configured yet\""
+    "lint": "echo \"No backend linter configured yet\"",
+    "db:migrate": "node scripts/migrate.js",
+    "db:seed": "node scripts/seed.js",
+    "db:reset": "node scripts/reset.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.6.1",
+    "pg": "^8.16.3"
   }
 }
