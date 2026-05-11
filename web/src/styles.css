@@ -173,6 +173,10 @@ body {
   background: #fff;
 }
 
+select.input {
+  width: 100%;
+}
+
 .btn {
   border: 1px solid #d1d5db;
   background: #fff;

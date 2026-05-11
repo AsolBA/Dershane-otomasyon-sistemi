@@ -62,3 +62,36 @@ export const initialCourses = [
   { id: "crs_2", name: "Fizik", code: "FIZ", active: true },
   { id: "crs_3", name: "Kimya", code: "KIM", active: false }
 ];
+
+export const initialSchedules = [
+  {
+    id: "sch_1",
+    day: "Monday",
+    startTime: "09:00",
+    endTime: "10:00",
+    className: "12-A",
+    teacherId: "tch_1",
+    courseId: "crs_1",
+    room: "A-101"
+  },
+  {
+    id: "sch_2",
+    day: "Monday",
+    startTime: "10:00",
+    endTime: "11:00",
+    className: "12-A",
+    teacherId: "tch_2",
+    courseId: "crs_2",
+    room: "A-101"
+  },
+  {
+    id: "sch_3",
+    day: "Tuesday",
+    startTime: "09:30",
+    endTime: "10:30",
+    className: "11-B",
+    teacherId: "tch_1",
+    courseId: "crs_1",
+    room: "B-204"
+  }
+];
