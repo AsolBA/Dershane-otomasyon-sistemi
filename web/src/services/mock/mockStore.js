@@ -95,3 +95,61 @@ export const initialSchedules = [
     room: "B-204"
   }
 ];
+
+export const initialExams = [
+  {
+    id: "exm_1",
+    name: "TYT Matematik Denemesi 1",
+    date: "2026-05-10",
+    courseId: "crs_1",
+    className: "12-A"
+  },
+  {
+    id: "exm_2",
+    name: "AYT Fizik Denemesi 1",
+    date: "2026-05-12",
+    courseId: "crs_2",
+    className: "12-A"
+  }
+];
+
+/** @type {{ examId: string; studentId: string; score: number }[]} */
+export const initialExamResults = [
+  { examId: "exm_1", studentId: "stu_1", score: 38.5 }
+];
+
+export const initialAnnouncements = [
+  {
+    id: "ann_1",
+    title: "Veli Toplantisi",
+    body: "12-A sinifi icin veli toplantisi Cuma gunu saat 17:00'de.",
+    scope: "CLASS",
+    className: "12-A",
+    createdAt: "2026-05-01T10:00:00+03:00"
+  },
+  {
+    id: "ann_2",
+    title: "Genel Duyuru",
+    body: "Deneme sinavi takvimi guncellendi. Lutfen panelden kontrol edin.",
+    scope: "ALL",
+    className: "",
+    createdAt: "2026-05-01T11:30:00+03:00"
+  }
+];
+
+export const initialNotifications = [
+  {
+    id: "ntf_1",
+    title: "Yeni duyuru",
+    body: "Genel duyuru yayinlandi.",
+    read: false,
+    createdAt: "2026-05-01T11:31:00+03:00"
+  },
+  {
+    id: "ntf_2",
+    title: "Program hatirlatmasi",
+    body: "Yarin 09:00'da Matematik dersi var.",
+    read: true,
+    createdAt: "2026-04-30T09:00:00+03:00"
+  }
+];
