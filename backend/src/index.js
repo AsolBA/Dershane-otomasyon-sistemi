@@ -1,21 +1,8 @@
-import express from "express";
 import { config } from "./config.js";
-import routes from "./routes.js";
-import { errorHandler, notFoundHandler } from "./middlewares/error-handler.js";
-import { sendSuccess } from "./utils/api-response.js";
+import { createApp } from "./app.js";
 import { db } from "./db.js";
 
-const app = express();
-
-app.use(express.json());
-
-app.get("/health", (_req, res) => {
-  return sendSuccess(res, { status: "ok" }, "Backend is running");
-});
-
-app.use("/api", routes);
-app.use(notFoundHandler);
-app.use(errorHandler);
+const app = createApp();
 
 async function start() {
   await db.query("SELECT 1");
