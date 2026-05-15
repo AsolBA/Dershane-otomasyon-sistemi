@@ -22,6 +22,12 @@ Bu repo, dershane otomasyon projesinin monorepo yapisini icerir.
 2. Kök dizindeki `.env.example` dosyasini `.env` olarak kopyalayin.
 3. `docker compose up --build` komutunu calistirin.
 
+## Backend Testleri
+
+1. Docker servisleri ayaktayken `backend` klasorunde bagimliliklari kurun.
+2. `npm run test:integration` komutunu calistirin.
+3. API endpoint listesi: `backend/docs/API.md`
+
 ## Roller
 
 - Oğuz: frontend + mobile
