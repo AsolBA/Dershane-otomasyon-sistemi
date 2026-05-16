@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { createId, initialTeachers } from "../services/mock/mockStore";
+import { useCallback, useEffect, useState } from "react";
+import { teachersService } from "../services";
 
 const emptyForm = {
   fullName: "",
@@ -12,21 +12,27 @@ const emptyForm = {
 export default function TeachersPage() {
   const [query, setQuery] = useState("");
   const [onlyActive, setOnlyActive] = useState(true);
-  const [rows, setRows] = useState(initialTeachers);
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [showForm, setShowForm] = useState(false);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return rows.filter((r) => {
-      if (onlyActive && !r.active) return false;
-      if (!q) return true;
-      const haystack = `${r.fullName} ${r.email} ${r.branch} ${r.phone}`.toLowerCase();
-      return haystack.includes(q);
-    });
-  }, [rows, query, onlyActive]);
+  const reload = useCallback(async () => {
+    setLoading(true);
+    try {
+      setRows(await teachersService.list({ onlyActive, q: query }));
+    } catch (err) {
+      alert(err?.message || "Liste yuklenemedi.");
+    } finally {
+      setLoading(false);
+    }
+  }, [onlyActive, query]);
+
+  useEffect(() => {
+    reload();
+  }, [reload]);
 
   function openCreate() {
     setEditingId(null);
@@ -52,7 +58,7 @@ export default function TeachersPage() {
     setForm(emptyForm);
   }
 
-  function save() {
+  async function save() {
     const payload = {
       fullName: form.fullName.trim(),
       email: form.email.trim(),
@@ -66,19 +72,25 @@ export default function TeachersPage() {
       return;
     }
 
-    if (editingId) {
-      setRows((prev) => prev.map((r) => (r.id === editingId ? { ...r, ...payload } : r)));
-    } else {
-      setRows((prev) => [{ id: createId("tch"), ...payload }, ...prev]);
+    try {
+      if (editingId) await teachersService.update(editingId, payload);
+      else await teachersService.create(payload);
+      await reload();
+      closeForm();
+    } catch (err) {
+      alert(err?.message || "Kayit basarisiz.");
     }
-
-    closeForm();
   }
 
-  function remove(id) {
+  async function remove(id) {
     if (!confirm("Bu kaydi silmek istiyor musun?")) return;
-    setRows((prev) => prev.filter((r) => r.id !== id));
-    if (editingId === id) closeForm();
+    try {
+      await teachersService.remove(id);
+      if (editingId === id) closeForm();
+      await reload();
+    } catch (err) {
+      alert(err?.message || "Silme basarisiz.");
+    }
   }
 
   return (
@@ -86,7 +98,7 @@ export default function TeachersPage() {
       <div className="page-header">
         <div>
           <h1>Ogretmenler</h1>
-          <p className="muted">Mock veri ile CRUD iskeleti.</p>
+          <p className="muted">Service layer uzerinden CRUD.</p>
         </div>
         <div className="toolbar">
           <input className="input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Ara..." />
@@ -113,7 +125,15 @@ export default function TeachersPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((r) => (
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="muted">
+                    Yukleniyor...
+                  </td>
+                </tr>
+              ) : null}
+              {!loading
+                ? rows.map((r) => (
                 <tr key={r.id}>
                   <td>
                     <div style={{ fontWeight: 600 }}>{r.fullName}</div>
@@ -135,8 +155,9 @@ export default function TeachersPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
-              {filtered.length === 0 ? (
+                  ))
+                : null}
+              {!loading && rows.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="muted">
                     Kayit bulunamadi.

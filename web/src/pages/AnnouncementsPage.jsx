@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { createId, initialAnnouncements, initialClasses } from "../services/mock/mockStore";
+import { useCallback, useEffect, useState } from "react";
+import { announcementsService, classesService } from "../services";
 
 const emptyForm = {
   title: "",
@@ -8,26 +8,32 @@ const emptyForm = {
   className: "12-A"
 };
 
-function emitNotification(detail) {
-  window.dispatchEvent(new CustomEvent("dershane:notifications-add", { detail }));
-}
-
 export default function AnnouncementsPage() {
-  const [rows, setRows] = useState(initialAnnouncements);
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [classOptions, setClassOptions] = useState([]);
   const [query, setQuery] = useState("");
   const [form, setForm] = useState(emptyForm);
   const [showForm, setShowForm] = useState(false);
 
-  const classOptions = useMemo(() => initialClasses.filter((c) => c.active).map((c) => c.name), []);
+  const reload = useCallback(async () => {
+    setLoading(true);
+    try {
+      setRows(await announcementsService.list({ q: query }));
+    } catch (err) {
+      alert(err?.message || "Liste yuklenemedi.");
+    } finally {
+      setLoading(false);
+    }
+  }, [query]);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return rows.filter((r) => {
-      if (!q) return true;
-      const haystack = `${r.title} ${r.body} ${r.scope} ${r.className || ""}`.toLowerCase();
-      return haystack.includes(q);
-    });
-  }, [rows, query]);
+  useEffect(() => {
+    reload();
+  }, [reload]);
+
+  useEffect(() => {
+    classesService.list({ onlyActive: true }).then((c) => setClassOptions(c.map((x) => x.name)));
+  }, []);
 
   function openCreate() {
     setForm(emptyForm);
@@ -39,7 +45,7 @@ export default function AnnouncementsPage() {
     setForm(emptyForm);
   }
 
-  function save() {
+  async function save() {
     const title = form.title.trim();
     const body = form.body.trim();
     const scope = form.scope === "CLASS" ? "CLASS" : "ALL";
@@ -54,32 +60,23 @@ export default function AnnouncementsPage() {
       return;
     }
 
-    const createdAt = new Date().toISOString();
-    const row = {
-      id: createId("ann"),
-      title,
-      body,
-      scope,
-      className,
-      createdAt
-    };
-
-    setRows((prev) => [row, ...prev]);
-
-    emitNotification({
-      id: createId("ntf"),
-      title: "Yeni duyuru",
-      body: title,
-      read: false,
-      createdAt
-    });
-
-    closeForm();
+    try {
+      await announcementsService.create({ title, body, scope, className });
+      await reload();
+      closeForm();
+    } catch (err) {
+      alert(err?.message || "Kayit basarisiz.");
+    }
   }
 
-  function remove(id) {
+  async function remove(id) {
     if (!confirm("Bu duyuruyu silmek istiyor musun?")) return;
-    setRows((prev) => prev.filter((r) => r.id !== id));
+    try {
+      await announcementsService.remove(id);
+      await reload();
+    } catch (err) {
+      alert(err?.message || "Silme basarisiz.");
+    }
   }
 
   return (
@@ -171,7 +168,15 @@ export default function AnnouncementsPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((r) => (
+              {loading ? (
+                <tr>
+                  <td colSpan={4} className="muted">
+                    Yukleniyor...
+                  </td>
+                </tr>
+              ) : null}
+              {!loading
+                ? rows.map((r) => (
                 <tr key={r.id}>
                   <td>
                     <div style={{ fontWeight: 700 }}>{r.title}</div>
@@ -195,8 +200,9 @@ export default function AnnouncementsPage() {
                     </button>
                   </td>
                 </tr>
-              ))}
-              {filtered.length === 0 ? (
+                  ))
+                : null}
+              {!loading && rows.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="muted">
                     Kayit bulunamadi.

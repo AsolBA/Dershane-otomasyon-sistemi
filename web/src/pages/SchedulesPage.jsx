@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { createId, initialCourses, initialSchedules, initialTeachers } from "../services/mock/mockStore";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { coursesService, schedulesService, teachersService } from "../services";
 import { findScheduleConflicts } from "../utils/scheduleConflict";
 
 const emptyForm = {
@@ -17,33 +17,56 @@ const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
 export default function SchedulesPage() {
   const [query, setQuery] = useState("");
   const [dayFilter, setDayFilter] = useState("ALL");
-  const [rows, setRows] = useState(initialSchedules);
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [teachers, setTeachers] = useState([]);
+  const [courses, setCourses] = useState([]);
 
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [showForm, setShowForm] = useState(false);
 
+  const reload = useCallback(async () => {
+    setLoading(true);
+    try {
+      setRows(await schedulesService.list({ day: dayFilter, q: query }));
+    } catch (err) {
+      alert(err?.message || "Liste yuklenemedi.");
+    } finally {
+      setLoading(false);
+    }
+  }, [dayFilter, query]);
+
+  useEffect(() => {
+    reload();
+  }, [reload]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [t, c] = await Promise.all([
+          teachersService.list({ onlyActive: true }),
+          coursesService.list({ onlyActive: true })
+        ]);
+        setTeachers(t);
+        setCourses(c);
+      } catch {
+        /* ignore */
+      }
+    })();
+  }, []);
+
   const teacherNameById = useMemo(() => {
     const map = new Map();
-    for (const t of initialTeachers) map.set(t.id, t.fullName);
+    for (const t of teachers) map.set(t.id, t.fullName);
     return map;
-  }, []);
+  }, [teachers]);
 
   const courseLabelById = useMemo(() => {
     const map = new Map();
-    for (const c of initialCourses) map.set(c.id, `${c.name} (${c.code})`);
+    for (const c of courses) map.set(c.id, `${c.name} (${c.code})`);
     return map;
-  }, []);
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return rows.filter((r) => {
-      if (dayFilter !== "ALL" && String(r.day) !== dayFilter) return false;
-      if (!q) return true;
-      const haystack = `${r.day} ${r.className} ${r.room} ${r.teacherId} ${r.courseId}`.toLowerCase();
-      return haystack.includes(q);
-    });
-  }, [rows, query, dayFilter]);
+  }, [courses]);
 
   const conflictPreview = useMemo(() => {
     // Basit bir “mevcut veri” cakisma ozeti (kaydetmeden de gorulsun)
@@ -93,7 +116,7 @@ export default function SchedulesPage() {
     setForm(emptyForm);
   }
 
-  function save() {
+  async function save() {
     const payload = {
       day: String(form.day).trim(),
       startTime: String(form.startTime).trim(),
@@ -109,26 +132,25 @@ export default function SchedulesPage() {
       return;
     }
 
-    const check = findScheduleConflicts({ rows, candidate: payload, ignoreId: editingId });
-    if (!check.ok) {
-      const msg = [...check.errors, ...check.conflicts.map((c) => c.message)].join("\n");
-      alert(`Cakisma / hata:\n${msg}`);
-      return;
+    try {
+      if (editingId) await schedulesService.update(editingId, payload);
+      else await schedulesService.create(payload);
+      await reload();
+      closeForm();
+    } catch (err) {
+      alert(err?.message || "Kayit basarisiz.");
     }
-
-    if (editingId) {
-      setRows((prev) => prev.map((r) => (r.id === editingId ? { ...r, ...payload } : r)));
-    } else {
-      setRows((prev) => [{ id: createId("sch"), ...payload }, ...prev]);
-    }
-
-    closeForm();
   }
 
-  function remove(id) {
+  async function remove(id) {
     if (!confirm("Bu program satirini silmek istiyor musun?")) return;
-    setRows((prev) => prev.filter((r) => r.id !== id));
-    if (editingId === id) closeForm();
+    try {
+      await schedulesService.remove(id);
+      if (editingId === id) closeForm();
+      await reload();
+    } catch (err) {
+      alert(err?.message || "Silme basarisiz.");
+    }
   }
 
   return (
@@ -183,7 +205,15 @@ export default function SchedulesPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((r) => (
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="muted">
+                    Yukleniyor...
+                  </td>
+                </tr>
+              ) : null}
+              {!loading
+                ? rows.map((r) => (
                 <tr key={r.id}>
                   <td style={{ fontWeight: 600 }}>{r.day}</td>
                   <td>
@@ -204,8 +234,9 @@ export default function SchedulesPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
-              {filtered.length === 0 ? (
+                  ))
+                : null}
+              {!loading && rows.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="muted">
                     Kayit bulunamadi.
@@ -262,7 +293,7 @@ export default function SchedulesPage() {
             <label>
               Ogretmen
               <select value={form.teacherId} onChange={(e) => setForm((p) => ({ ...p, teacherId: e.target.value }))}>
-                {initialTeachers.filter((t) => t.active).map((t) => (
+                {teachers.map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.fullName} ({t.branch})
                   </option>
@@ -272,7 +303,7 @@ export default function SchedulesPage() {
             <label>
               Ders
               <select value={form.courseId} onChange={(e) => setForm((p) => ({ ...p, courseId: e.target.value }))}>
-                {initialCourses.filter((c) => c.active).map((c) => (
+                {courses.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name} ({c.code})
                   </option>

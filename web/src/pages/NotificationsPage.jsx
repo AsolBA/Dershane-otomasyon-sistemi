@@ -1,38 +1,43 @@
-import { useEffect, useMemo, useState } from "react";
-import { initialNotifications } from "../services/mock/mockStore";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { notificationsService } from "../services";
 
 export default function NotificationsPage() {
-  const [rows, setRows] = useState(initialNotifications);
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const onAdd = (e) => {
-      const detail = e?.detail;
-      if (!detail?.id) return;
-      setRows((prev) => {
-        if (prev.some((r) => r.id === detail.id)) return prev;
-        return [detail, ...prev];
-      });
-    };
-
-    window.addEventListener("dershane:notifications-add", onAdd);
-    return () => window.removeEventListener("dershane:notifications-add", onAdd);
+  const reload = useCallback(async () => {
+    setLoading(true);
+    try {
+      setRows(await notificationsService.list());
+    } catch (err) {
+      alert(err?.message || "Liste yuklenemedi.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const sorted = useMemo(() => {
-    return [...rows].sort((a, b) => {
-      if (Boolean(a.read) !== Boolean(b.read)) return a.read ? 1 : -1;
-      return String(b.createdAt).localeCompare(String(a.createdAt));
-    });
-  }, [rows]);
+  useEffect(() => {
+    reload();
+  }, [reload]);
 
   const unreadCount = useMemo(() => rows.filter((r) => !r.read).length, [rows]);
 
-  function markRead(id) {
-    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, read: true } : r)));
+  async function markRead(id) {
+    try {
+      await notificationsService.markRead(id);
+      await reload();
+    } catch (err) {
+      alert(err?.message || "Islem basarisiz.");
+    }
   }
 
-  function markAllRead() {
-    setRows((prev) => prev.map((r) => ({ ...r, read: true })));
+  async function markAllRead() {
+    try {
+      await notificationsService.markAllRead();
+      await reload();
+    } catch (err) {
+      alert(err?.message || "Islem basarisiz.");
+    }
   }
 
   return (
@@ -41,12 +46,15 @@ export default function NotificationsPage() {
         <div>
           <h1>Bildirimler</h1>
           <p className="muted">
-            Okunmamis: <strong>{unreadCount}</strong> — Duyuru yayinlayinca buraya dusen mock bildirimler.
+            Okunmamis: <strong>{unreadCount}</strong>
           </p>
         </div>
         <div className="toolbar">
           <button className="btn" type="button" onClick={markAllRead} disabled={unreadCount === 0}>
             Tumunu okundu yap
+          </button>
+          <button className="btn" type="button" onClick={reload}>
+            Yenile
           </button>
         </div>
       </div>
@@ -63,22 +71,31 @@ export default function NotificationsPage() {
               </tr>
             </thead>
             <tbody>
-              {sorted.map((r) => (
-                <tr key={r.id}>
-                  <td>
-                    <div style={{ fontWeight: r.read ? 600 : 800 }}>{r.title}</div>
-                    <div className="muted">{r.body}</div>
-                  </td>
-                  <td>{r.read ? <span className="pill ok">Okundu</span> : <span className="pill bad">Okunmadi</span>}</td>
-                  <td className="muted">{new Date(r.createdAt).toLocaleString()}</td>
-                  <td style={{ width: 160 }}>
-                    <button className="btn btn-primary" type="button" disabled={r.read} onClick={() => markRead(r.id)}>
-                      Okundu
-                    </button>
+              {loading ? (
+                <tr>
+                  <td colSpan={4} className="muted">
+                    Yukleniyor...
                   </td>
                 </tr>
-              ))}
-              {sorted.length === 0 ? (
+              ) : null}
+              {!loading
+                ? rows.map((r) => (
+                    <tr key={r.id}>
+                      <td>
+                        <div style={{ fontWeight: r.read ? 600 : 800 }}>{r.title}</div>
+                        <div className="muted">{r.body}</div>
+                      </td>
+                      <td>{r.read ? <span className="pill ok">Okundu</span> : <span className="pill bad">Okunmadi</span>}</td>
+                      <td className="muted">{new Date(r.createdAt).toLocaleString()}</td>
+                      <td style={{ width: 160 }}>
+                        <button className="btn btn-primary" type="button" disabled={r.read} onClick={() => markRead(r.id)}>
+                          Okundu
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                : null}
+              {!loading && rows.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="muted">
                     Bildirim yok.

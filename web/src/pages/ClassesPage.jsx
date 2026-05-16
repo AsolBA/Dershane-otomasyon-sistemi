@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { createId, initialClasses } from "../services/mock/mockStore";
+import { useCallback, useEffect, useState } from "react";
+import { classesService } from "../services";
 
 const emptyForm = {
   name: "",
@@ -11,21 +11,27 @@ const emptyForm = {
 export default function ClassesPage() {
   const [query, setQuery] = useState("");
   const [onlyActive, setOnlyActive] = useState(true);
-  const [rows, setRows] = useState(initialClasses);
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [showForm, setShowForm] = useState(false);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return rows.filter((r) => {
-      if (onlyActive && !r.active) return false;
-      if (!q) return true;
-      const haystack = `${r.name} ${r.gradeLevel}`.toLowerCase();
-      return haystack.includes(q);
-    });
-  }, [rows, query, onlyActive]);
+  const reload = useCallback(async () => {
+    setLoading(true);
+    try {
+      setRows(await classesService.list({ onlyActive, q: query }));
+    } catch (err) {
+      alert(err?.message || "Liste yuklenemedi.");
+    } finally {
+      setLoading(false);
+    }
+  }, [onlyActive, query]);
+
+  useEffect(() => {
+    reload();
+  }, [reload]);
 
   function openCreate() {
     setEditingId(null);
@@ -50,7 +56,7 @@ export default function ClassesPage() {
     setForm(emptyForm);
   }
 
-  function save() {
+  async function save() {
     const capacity = Number(form.capacity);
     const payload = {
       name: form.name.trim(),
@@ -64,19 +70,25 @@ export default function ClassesPage() {
       return;
     }
 
-    if (editingId) {
-      setRows((prev) => prev.map((r) => (r.id === editingId ? { ...r, ...payload } : r)));
-    } else {
-      setRows((prev) => [{ id: createId("cls"), ...payload }, ...prev]);
+    try {
+      if (editingId) await classesService.update(editingId, payload);
+      else await classesService.create(payload);
+      await reload();
+      closeForm();
+    } catch (err) {
+      alert(err?.message || "Kayit basarisiz.");
     }
-
-    closeForm();
   }
 
-  function remove(id) {
+  async function remove(id) {
     if (!confirm("Bu kaydi silmek istiyor musun?")) return;
-    setRows((prev) => prev.filter((r) => r.id !== id));
-    if (editingId === id) closeForm();
+    try {
+      await classesService.remove(id);
+      if (editingId === id) closeForm();
+      await reload();
+    } catch (err) {
+      alert(err?.message || "Silme basarisiz.");
+    }
   }
 
   return (
@@ -111,7 +123,15 @@ export default function ClassesPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((r) => (
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="muted">
+                    Yukleniyor...
+                  </td>
+                </tr>
+              ) : null}
+              {!loading
+                ? rows.map((r) => (
                 <tr key={r.id}>
                   <td style={{ fontWeight: 600 }}>{r.name}</td>
                   <td>{r.gradeLevel}</td>
@@ -130,8 +150,9 @@ export default function ClassesPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
-              {filtered.length === 0 ? (
+                  ))
+                : null}
+              {!loading && rows.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="muted">
                     Kayit bulunamadi.

@@ -1,0 +1,25 @@
+import { apiRequest } from "../httpClient.js";
+
+function unwrapList(data) {
+  return data?.items ?? data?.rows ?? data ?? [];
+}
+
+export async function list({ onlyActive, q } = {}) {
+  const params = new URLSearchParams();
+  if (onlyActive) params.set("isActive", "true");
+  if (q) params.set("search", q);
+  const data = await apiRequest(`/courses?${params.toString()}`);
+  return unwrapList(data);
+}
+
+export async function create(payload) {
+  return apiRequest("/courses", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export async function update(id, payload) {
+  return apiRequest(`/courses/${id}`, { method: "PATCH", body: JSON.stringify(payload) });
+}
+
+export async function remove(id) {
+  return apiRequest(`/courses/${id}`, { method: "DELETE" });
+}

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { initialSchedules, initialStudents, initialTeachers } from "../services/mock/mockStore";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { attendanceService, schedulesService, studentsService, teachersService } from "../services";
 
 const STATUSES = [
   { value: "PRESENT", label: "Geldi" },
@@ -16,53 +16,67 @@ function todayISO() {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-function keyFor(scheduleId, date) {
-  return `${scheduleId}__${date}`;
-}
-
 export default function AttendancePage() {
-  const [schedules] = useState(initialSchedules);
-  const [scheduleId, setScheduleId] = useState(initialSchedules[0]?.id || "");
+  const [schedules, setSchedules] = useState([]);
+  const [scheduleId, setScheduleId] = useState("");
   const [date, setDate] = useState(todayISO());
+  const [allStudents, setAllStudents] = useState([]);
 
-  const [attendanceByKey, setAttendanceByKey] = useState({});
   const [rows, setRows] = useState([]);
+  const [teachersRef, setTeachersRef] = useState([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [sch, stu, tch] = await Promise.all([
+          schedulesService.list(),
+          studentsService.list({ onlyActive: true }),
+          teachersService.list({ onlyActive: true })
+        ]);
+        setSchedules(sch);
+        setAllStudents(stu);
+        setTeachersRef(tch);
+        if (sch[0]?.id) setScheduleId(sch[0].id);
+      } catch (err) {
+        alert(err?.message || "Veri yuklenemedi.");
+      }
+    })();
+  }, []);
 
   const teacherNameById = useMemo(() => {
     const map = new Map();
-    for (const t of initialTeachers) map.set(t.id, t.fullName);
+    for (const t of teachersRef) map.set(t.id, t.fullName);
     return map;
-  }, []);
+  }, [teachersRef]);
 
   const schedule = useMemo(() => schedules.find((s) => s.id === scheduleId) || null, [schedules, scheduleId]);
 
   const studentsForClass = useMemo(() => {
     if (!schedule) return [];
-    return initialStudents.filter((s) => s.active && s.className === schedule.className);
-  }, [schedule]);
+    return allStudents.filter((s) => s.className === schedule.className);
+  }, [schedule, allStudents]);
 
-  useEffect(() => {
+  const loadAttendance = useCallback(async () => {
     if (!schedule) {
       setRows([]);
       return;
     }
-
-    const k = keyFor(schedule.id, date);
-    const existing = attendanceByKey[k];
-
-    if (existing) {
+    const existing = await attendanceService.getAttendance(schedule.id, date);
+    if (existing && existing.length) {
       setRows(existing);
       return;
     }
-
-    // default: everyone present
     setRows(
       studentsForClass.map((s) => ({
         studentId: s.id,
         status: "PRESENT"
       }))
     );
-  }, [schedule, date, attendanceByKey, studentsForClass]);
+  }, [schedule, date, studentsForClass]);
+
+  useEffect(() => {
+    loadAttendance().catch((err) => alert(err?.message || "Yoklama yuklenemedi."));
+  }, [loadAttendance]);
 
   function setStatus(studentId, status) {
     setRows((prev) => prev.map((r) => (r.studentId === studentId ? { ...r, status } : r)));
@@ -72,11 +86,14 @@ export default function AttendancePage() {
     setRows((prev) => prev.map((r) => ({ ...r, status })));
   }
 
-  function save() {
+  async function save() {
     if (!schedule) return;
-    const k = keyFor(schedule.id, date);
-    setAttendanceByKey((prev) => ({ ...prev, [k]: rows }));
-    alert("Yoklama kaydedildi (mock).");
+    try {
+      await attendanceService.saveAttendance(schedule.id, date, rows);
+      alert("Yoklama kaydedildi.");
+    } catch (err) {
+      alert(err?.message || "Kayit basarisiz.");
+    }
   }
 
   const summary = useMemo(() => {

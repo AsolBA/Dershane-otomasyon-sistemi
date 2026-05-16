@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ROLES, useAuth } from "../auth/AuthContext";
+import { USE_MOCK_API } from "../services";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -26,7 +27,7 @@ export default function LoginPage() {
       await login({ email, password, role });
       navigate(from, { replace: true });
     } catch (err) {
-      setError("Giris basarisiz. Lutfen tekrar deneyin.");
+      setError(err?.message || "Giris basarisiz. Lutfen tekrar deneyin.");
       console.error(err);
     } finally {
       setSubmitting(false);
@@ -37,7 +38,7 @@ export default function LoginPage() {
     <div className="auth-page">
       <div className="auth-card">
         <h1>Giris</h1>
-        <p className="muted">Simdi mock login. Sonra backend JWT ile degisecek.</p>
+        <p className="muted">{USE_MOCK_API ? "Mock login (gelistirme modu)." : "Backend JWT login."}</p>
 
         <form onSubmit={onSubmit} className="form">
           <label className="field">
@@ -55,16 +56,18 @@ export default function LoginPage() {
             />
           </label>
 
-          <label className="field">
-            <span>Rol (mock)</span>
-            <select value={role} onChange={(e) => setRole(e.target.value)}>
-              <option value={ROLES.ADMIN}>Admin</option>
-              <option value={ROLES.DIRECTOR}>Kurum Muduru</option>
-              <option value={ROLES.TEACHER}>Ogretmen</option>
-              <option value={ROLES.STUDENT}>Ogrenci</option>
-              <option value={ROLES.PARENT}>Veli</option>
-            </select>
-          </label>
+          {USE_MOCK_API ? (
+            <label className="field">
+              <span>Rol (mock)</span>
+              <select value={role} onChange={(e) => setRole(e.target.value)}>
+                <option value={ROLES.ADMIN}>Admin</option>
+                <option value={ROLES.DIRECTOR}>Kurum Muduru</option>
+                <option value={ROLES.TEACHER}>Ogretmen</option>
+                <option value={ROLES.STUDENT}>Ogrenci</option>
+                <option value={ROLES.PARENT}>Veli</option>
+              </select>
+            </label>
+          ) : null}
 
           {error ? <div className="error">{error}</div> : null}
 

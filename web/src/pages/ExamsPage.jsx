@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { createId, initialCourses, initialExamResults, initialExams, initialStudents } from "../services/mock/mockStore";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { coursesService, examsService, studentsService } from "../services";
 
 const emptyExam = {
   name: "",
@@ -9,15 +9,49 @@ const emptyExam = {
 };
 
 export default function ExamsPage() {
-  const [exams, setExams] = useState(initialExams);
-  const [results, setResults] = useState(initialExamResults);
+  const [exams, setExams] = useState([]);
+  const [results, setResults] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [allStudents, setAllStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [query, setQuery] = useState("");
   const [editingExamId, setEditingExamId] = useState(null);
   const [examForm, setExamForm] = useState(emptyExam);
   const [showExamForm, setShowExamForm] = useState(false);
 
-  const [selectedExamId, setSelectedExamId] = useState(initialExams[0]?.id || "");
+  const [selectedExamId, setSelectedExamId] = useState("");
+
+  const reloadExams = useCallback(async () => {
+    setLoading(true);
+    try {
+      const list = await examsService.listExams({ q: query });
+      setExams(list);
+    } catch (err) {
+      alert(err?.message || "Sinav listesi yuklenemedi.");
+    } finally {
+      setLoading(false);
+    }
+  }, [query]);
+
+  useEffect(() => {
+    reloadExams();
+  }, [reloadExams]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [c, s] = await Promise.all([
+          coursesService.list({ onlyActive: true }),
+          studentsService.list({ onlyActive: true })
+        ]);
+        setCourses(c);
+        setAllStudents(s);
+      } catch {
+        /* ignore */
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     if (!exams.length) {
@@ -31,25 +65,24 @@ export default function ExamsPage() {
 
   const courseLabelById = useMemo(() => {
     const map = new Map();
-    for (const c of initialCourses) map.set(c.id, `${c.name} (${c.code})`);
+    for (const c of courses) map.set(c.id, `${c.name} (${c.code})`);
     return map;
-  }, []);
-
-  const filteredExams = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return exams.filter((e) => {
-      if (!q) return true;
-      const haystack = `${e.name} ${e.date} ${e.className} ${e.courseId}`.toLowerCase();
-      return haystack.includes(q);
-    });
-  }, [exams, query]);
+  }, [courses]);
 
   const selectedExam = useMemo(() => exams.find((e) => e.id === selectedExamId) || null, [exams, selectedExamId]);
 
   const studentsForSelected = useMemo(() => {
     if (!selectedExam) return [];
-    return initialStudents.filter((s) => s.active && s.className === selectedExam.className);
-  }, [selectedExam]);
+    return allStudents.filter((s) => s.className === selectedExam.className);
+  }, [selectedExam, allStudents]);
+
+  useEffect(() => {
+    if (!selectedExamId) return;
+    examsService
+      .listResults(selectedExamId)
+      .then(setResults)
+      .catch(() => setResults([]));
+  }, [selectedExamId]);
 
   const scoreByStudentId = useMemo(() => {
     const map = new Map();
@@ -83,7 +116,7 @@ export default function ExamsPage() {
     setExamForm(emptyExam);
   }
 
-  function saveExam() {
+  async function saveExam() {
     const payload = {
       name: examForm.name.trim(),
       date: examForm.date.trim(),
@@ -96,41 +129,47 @@ export default function ExamsPage() {
       return;
     }
 
-    if (editingExamId) {
-      setExams((prev) => prev.map((e) => (e.id === editingExamId ? { ...e, ...payload } : e)));
-    } else {
-      const id = createId("exm");
-      setExams((prev) => [{ id, ...payload }, ...prev]);
-      setSelectedExamId(id);
+    try {
+      if (editingExamId) {
+        await examsService.updateExam(editingExamId, payload);
+      } else {
+        const created = await examsService.createExam(payload);
+        setSelectedExamId(created.id);
+      }
+      await reloadExams();
+      closeExamForm();
+    } catch (err) {
+      alert(err?.message || "Kayit basarisiz.");
     }
-
-    closeExamForm();
   }
 
-  function removeExam(id) {
+  async function removeExam(id) {
     if (!confirm("Bu sinavi ve bagli sonuclari silmek istiyor musun?")) return;
-    const nextExams = exams.filter((e) => e.id !== id);
-    setExams(nextExams);
-    setResults((prev) => prev.filter((r) => r.examId !== id));
-    if (selectedExamId === id) {
-      setSelectedExamId(nextExams[0]?.id || "");
+    try {
+      await examsService.removeExam(id);
+      if (selectedExamId === id) setSelectedExamId("");
+      await reloadExams();
+      setResults([]);
+    } catch (err) {
+      alert(err?.message || "Silme basarisiz.");
     }
   }
 
-  function setScore(studentId, raw) {
+  async function setScore(studentId, raw) {
     if (!selectedExam) return;
     const n = Number(String(raw).replace(",", "."));
-    const score = Number.isFinite(n) ? n : NaN;
-
-    setResults((prev) => {
-      const others = prev.filter((r) => !(r.examId === selectedExam.id && r.studentId === studentId));
-      if (!Number.isFinite(score)) return others;
-      return [...others, { examId: selectedExam.id, studentId, score }];
-    });
+    const score = Number.isFinite(n) ? n : null;
+    try {
+      await examsService.upsertResult(selectedExam.id, studentId, score);
+      const next = await examsService.listResults(selectedExam.id);
+      setResults(next);
+    } catch (err) {
+      alert(err?.message || "Sonuc kaydi basarisiz.");
+    }
   }
 
-  function saveResults() {
-    alert("Sinav sonuclari kaydedildi (mock).");
+  async function saveResults() {
+    alert("Sonuclar otomatik kaydediliyor (alan degisince).");
   }
 
   const summary = useMemo(() => {
@@ -146,7 +185,7 @@ export default function ExamsPage() {
       <div className="page-header">
         <div>
           <h1>Sinavlar</h1>
-          <p className="muted">Sinav CRUD + sinifa gore sonuc girisi (mock). Sonra backend baglanacak.</p>
+          <p className="muted">Service layer uzerinden sinav ve sonuc yonetimi.</p>
         </div>
         <div className="toolbar">
           <input className="input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Ara..." />
@@ -169,7 +208,15 @@ export default function ExamsPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredExams.map((e) => (
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="muted">
+                    Yukleniyor...
+                  </td>
+                </tr>
+              ) : null}
+              {!loading
+                ? exams.map((e) => (
                 <tr key={e.id}>
                   <td style={{ fontWeight: 600 }}>{e.name}</td>
                   <td>{e.date}</td>
@@ -189,8 +236,9 @@ export default function ExamsPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
-              {filteredExams.length === 0 ? (
+                  ))
+                : null}
+              {!loading && exams.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="muted">
                     Kayit bulunamadi.
@@ -233,7 +281,7 @@ export default function ExamsPage() {
             <label>
               Ders
               <select className="input" value={examForm.courseId} onChange={(e) => setExamForm((p) => ({ ...p, courseId: e.target.value }))}>
-                {initialCourses.filter((c) => c.active).map((c) => (
+                {courses.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name} ({c.code})
                   </option>

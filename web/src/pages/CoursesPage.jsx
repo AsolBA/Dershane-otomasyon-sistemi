@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { createId, initialCourses } from "../services/mock/mockStore";
+import { useCallback, useEffect, useState } from "react";
+import { coursesService } from "../services";
 
 const emptyForm = {
   name: "",
@@ -10,21 +10,27 @@ const emptyForm = {
 export default function CoursesPage() {
   const [query, setQuery] = useState("");
   const [onlyActive, setOnlyActive] = useState(true);
-  const [rows, setRows] = useState(initialCourses);
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [showForm, setShowForm] = useState(false);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return rows.filter((r) => {
-      if (onlyActive && !r.active) return false;
-      if (!q) return true;
-      const haystack = `${r.name} ${r.code}`.toLowerCase();
-      return haystack.includes(q);
-    });
-  }, [rows, query, onlyActive]);
+  const reload = useCallback(async () => {
+    setLoading(true);
+    try {
+      setRows(await coursesService.list({ onlyActive, q: query }));
+    } catch (err) {
+      alert(err?.message || "Liste yuklenemedi.");
+    } finally {
+      setLoading(false);
+    }
+  }, [onlyActive, query]);
+
+  useEffect(() => {
+    reload();
+  }, [reload]);
 
   function openCreate() {
     setEditingId(null);
@@ -48,7 +54,7 @@ export default function CoursesPage() {
     setForm(emptyForm);
   }
 
-  function save() {
+  async function save() {
     const payload = {
       name: form.name.trim(),
       code: form.code.trim().toUpperCase(),
@@ -60,25 +66,25 @@ export default function CoursesPage() {
       return;
     }
 
-    const dup = rows.some((r) => r.code === payload.code && r.id !== editingId);
-    if (dup) {
-      alert("Bu ders kodu zaten var.");
-      return;
+    try {
+      if (editingId) await coursesService.update(editingId, payload);
+      else await coursesService.create(payload);
+      await reload();
+      closeForm();
+    } catch (err) {
+      alert(err?.message || "Kayit basarisiz.");
     }
-
-    if (editingId) {
-      setRows((prev) => prev.map((r) => (r.id === editingId ? { ...r, ...payload } : r)));
-    } else {
-      setRows((prev) => [{ id: createId("crs"), ...payload }, ...prev]);
-    }
-
-    closeForm();
   }
 
-  function remove(id) {
+  async function remove(id) {
     if (!confirm("Bu kaydi silmek istiyor musun?")) return;
-    setRows((prev) => prev.filter((r) => r.id !== id));
-    if (editingId === id) closeForm();
+    try {
+      await coursesService.remove(id);
+      if (editingId === id) closeForm();
+      await reload();
+    } catch (err) {
+      alert(err?.message || "Silme basarisiz.");
+    }
   }
 
   return (
@@ -112,7 +118,15 @@ export default function CoursesPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((r) => (
+              {loading ? (
+                <tr>
+                  <td colSpan={4} className="muted">
+                    Yukleniyor...
+                  </td>
+                </tr>
+              ) : null}
+              {!loading
+                ? rows.map((r) => (
                 <tr key={r.id}>
                   <td style={{ fontWeight: 600 }}>{r.name}</td>
                   <td>
@@ -132,8 +146,9 @@ export default function CoursesPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
-              {filtered.length === 0 ? (
+                  ))
+                : null}
+              {!loading && rows.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="muted">
                     Kayit bulunamadi.
