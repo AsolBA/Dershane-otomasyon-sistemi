@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "Dershane",
+    "slug": "dershane-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "dershane",
+    "userInterfaceStyle": "light",
+    "platforms": ["ios", "android"],
+    "android": {
+      "package": "com.dershane.mobile"
+    },
+    "ios": {
+      "bundleIdentifier": "com.dershane.mobile"
+    }
+  }
+}
