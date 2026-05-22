@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "../../auth/AuthContext";
 import { schedulesService } from "../../services";
 import { colors, spacing } from "../../theme";
@@ -8,22 +8,30 @@ export default function ScheduleScreen() {
   const { user } = useAuth();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const reload = useCallback(async () => {
-    setLoading(true);
     try {
       const data = await schedulesService.listForClass(user?.className || "12-A");
       setRows(data);
     } catch (err) {
       alert(err?.message || "Program yuklenemedi.");
-    } finally {
-      setLoading(false);
     }
   }, [user?.className]);
 
   useEffect(() => {
-    reload();
+    (async () => {
+      setLoading(true);
+      await reload();
+      setLoading(false);
+    })();
   }, [reload]);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await reload();
+    setRefreshing(false);
+  }
 
   if (loading) {
     return (
@@ -38,6 +46,7 @@ export default function ScheduleScreen() {
       contentContainerStyle={styles.list}
       data={rows}
       keyExtractor={(item) => item.id}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       ListEmptyComponent={<Text style={styles.muted}>Program kaydi yok.</Text>}
       renderItem={({ item }) => (
         <View style={styles.card}>

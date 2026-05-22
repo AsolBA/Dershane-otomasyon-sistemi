@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { ROLES, useAuth } from "../../auth/AuthContext";
 import { examsService } from "../../services";
 import { colors, spacing } from "../../theme";
@@ -8,9 +8,9 @@ export default function ExamResultsScreen() {
   const { user } = useAuth();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const reload = useCallback(async () => {
-    setLoading(true);
     try {
       const data =
         user?.role === ROLES.PARENT
@@ -19,14 +19,22 @@ export default function ExamResultsScreen() {
       setRows(data);
     } catch (err) {
       alert(err?.message || "Sinavlar yuklenemedi.");
-    } finally {
-      setLoading(false);
     }
   }, [user]);
 
   useEffect(() => {
-    reload();
+    (async () => {
+      setLoading(true);
+      await reload();
+      setLoading(false);
+    })();
   }, [reload]);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await reload();
+    setRefreshing(false);
+  }
 
   if (loading) {
     return (
@@ -41,6 +49,7 @@ export default function ExamResultsScreen() {
       contentContainerStyle={styles.list}
       data={rows}
       keyExtractor={(item) => item.id}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       ListEmptyComponent={<Text style={styles.muted}>Sinav kaydi yok.</Text>}
       renderItem={({ item }) => (
         <View style={styles.card}>

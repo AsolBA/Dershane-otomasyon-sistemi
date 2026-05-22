@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "../../auth/AuthContext";
 import { attendanceService } from "../../services";
 import { colors, spacing } from "../../theme";
@@ -15,22 +15,30 @@ export default function AttendanceScreen() {
   const { user } = useAuth();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const reload = useCallback(async () => {
-    setLoading(true);
     try {
       const data = await attendanceService.listAttendanceForParent(user?.linkedStudentId);
       setRows(data);
     } catch (err) {
       alert(err?.message || "Devamsizlik yuklenemedi.");
-    } finally {
-      setLoading(false);
     }
   }, [user?.linkedStudentId]);
 
   useEffect(() => {
-    reload();
+    (async () => {
+      setLoading(true);
+      await reload();
+      setLoading(false);
+    })();
   }, [reload]);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await reload();
+    setRefreshing(false);
+  }
 
   if (loading) {
     return (
@@ -45,6 +53,7 @@ export default function AttendanceScreen() {
       contentContainerStyle={styles.list}
       data={rows}
       keyExtractor={(item) => item.date}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       ListEmptyComponent={<Text style={styles.muted}>Kayit yok.</Text>}
       renderItem={({ item }) => (
         <View style={styles.card}>

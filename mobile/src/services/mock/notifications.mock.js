@@ -8,3 +8,9 @@ export async function markRead(id) {
   const row = initialNotifications.find((n) => n.id === id);
   if (row) row.read = true;
 }
+
+export async function markAllRead() {
+  initialNotifications.forEach((n) => {
+    n.read = true;
+  });
+}

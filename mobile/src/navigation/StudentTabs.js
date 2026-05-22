@@ -4,6 +4,7 @@ import StudentHomeScreen from "../screens/student/StudentHomeScreen";
 import ExamResultsScreen from "../screens/shared/ExamResultsScreen";
 import ScheduleScreen from "../screens/shared/ScheduleScreen";
 import AnnouncementsScreen from "../screens/shared/AnnouncementsScreen";
+import NotificationsScreen from "../screens/shared/NotificationsScreen";
 
 const Tab = createBottomTabNavigator();
 
@@ -14,6 +15,7 @@ export default function StudentTabs() {
       <Tab.Screen name="Sinavlar" component={ExamResultsScreen} />
       <Tab.Screen name="Program" component={ScheduleScreen} />
       <Tab.Screen name="Duyurular" component={AnnouncementsScreen} />
+      <Tab.Screen name="Bildirimler" component={NotificationsScreen} />
     </Tab.Navigator>
   );
 }
