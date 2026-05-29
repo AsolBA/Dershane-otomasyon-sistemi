@@ -1,5 +1,10 @@
 import { apiRequest } from "../httpClient.js";
 
+export async function listAttendanceForStudent(studentId) {
+  const data = await apiRequest(`/attendance/report?studentId=${encodeURIComponent(studentId || "")}`);
+  return data?.rows ?? data?.items ?? data ?? [];
+}
+
 export async function getAttendance(scheduleId, date) {
   const params = new URLSearchParams({ scheduleId, date });
   const data = await apiRequest(`/attendance?${params.toString()}`);

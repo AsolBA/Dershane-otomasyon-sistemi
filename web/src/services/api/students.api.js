@@ -4,6 +4,10 @@ function unwrapList(data) {
   return data?.items ?? data?.rows ?? data ?? [];
 }
 
+export async function getById(id) {
+  return apiRequest(`/students/${id}`);
+}
+
 export async function list({ onlyActive, q } = {}) {
   const params = new URLSearchParams();
   if (onlyActive) params.set("isActive", "true");

@@ -5,7 +5,7 @@ export function createId(prefix) {
 export const initialStudents = [
   {
     id: "stu_1",
-    fullName: "Ayse Yilmaz",
+    fullName: "Ayşe Yılmaz",
     email: "ayse@student.local",
     className: "12-A",
     parentName: "Mehmet Yilmaz",

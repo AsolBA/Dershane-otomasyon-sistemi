@@ -27,7 +27,7 @@ export default function LoginPage() {
       await login({ email, password, role });
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err?.message || "Giris basarisiz. Lutfen tekrar deneyin.");
+      setError(err?.message || "Giriş başarısız. Lütfen tekrar deneyin.");
       console.error(err);
     } finally {
       setSubmitting(false);
@@ -37,8 +37,13 @@ export default function LoginPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <h1>Giris</h1>
-        <p className="muted">{USE_MOCK_API ? "Mock login (gelistirme modu)." : "Backend JWT login."}</p>
+        <div className="auth-brand">
+          <span className="brand-mark lg">D</span>
+          <div>
+            <h1>Dershane Otomasyon</h1>
+            <p className="muted">{USE_MOCK_API ? "Geliştirme modu (mock giriş)" : "Hesabınızla giriş yapın"}</p>
+          </div>
+        </div>
 
         <form onSubmit={onSubmit} className="form">
           <label className="field">
@@ -47,7 +52,7 @@ export default function LoginPage() {
           </label>
 
           <label className="field">
-            <span>Sifre</span>
+            <span>Şifre</span>
             <input
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -60,10 +65,10 @@ export default function LoginPage() {
             <label className="field">
               <span>Rol (mock)</span>
               <select value={role} onChange={(e) => setRole(e.target.value)}>
-                <option value={ROLES.ADMIN}>Admin</option>
-                <option value={ROLES.DIRECTOR}>Kurum Muduru</option>
-                <option value={ROLES.TEACHER}>Ogretmen</option>
-                <option value={ROLES.STUDENT}>Ogrenci</option>
+                <option value={ROLES.ADMIN}>Yönetici</option>
+                <option value={ROLES.DIRECTOR}>Kurum müdürü</option>
+                <option value={ROLES.TEACHER}>Öğretmen</option>
+                <option value={ROLES.STUDENT}>Öğrenci</option>
                 <option value={ROLES.PARENT}>Veli</option>
               </select>
             </label>
@@ -72,7 +77,7 @@ export default function LoginPage() {
           {error ? <div className="error">{error}</div> : null}
 
           <button className="primary" type="submit" disabled={submitting}>
-            {submitting ? "Giriliyor..." : "Giris yap"}
+            {submitting ? "Giriliyor…" : "Giriş yap"}
           </button>
         </form>
       </div>

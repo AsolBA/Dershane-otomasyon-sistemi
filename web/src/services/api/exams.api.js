@@ -4,6 +4,11 @@ function unwrapList(data) {
   return data?.items ?? data?.rows ?? data ?? [];
 }
 
+export async function listExamsForStudent(studentId) {
+  const data = await apiRequest(`/exams/my?studentId=${encodeURIComponent(studentId || "")}`);
+  return unwrapList(data);
+}
+
 export async function listExams({ q } = {}) {
   const params = new URLSearchParams();
   if (q) params.set("search", q);

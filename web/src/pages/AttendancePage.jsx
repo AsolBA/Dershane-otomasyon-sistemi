@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ROLES, useAuth } from "../auth/AuthContext";
+import ParentAttendanceReadOnly from "../components/ParentAttendanceReadOnly";
 import { attendanceService, schedulesService, studentsService, teachersService } from "../services";
 
 const STATUSES = [
@@ -17,6 +19,14 @@ function todayISO() {
 }
 
 export default function AttendancePage() {
+  const { user } = useAuth();
+  if (user?.role === ROLES.PARENT) {
+    return <ParentAttendanceReadOnly />;
+  }
+  return <AttendanceAdminPage />;
+}
+
+function AttendanceAdminPage() {
   const [schedules, setSchedules] = useState([]);
   const [scheduleId, setScheduleId] = useState("");
   const [date, setDate] = useState(todayISO());

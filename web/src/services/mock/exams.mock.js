@@ -1,5 +1,15 @@
 import { createId, getStore } from "./state.js";
 
+export async function listExamsForStudent(studentId) {
+  const store = getStore();
+  const student = store.students.find((s) => s.id === studentId) || store.students[0];
+  const exams = store.exams.filter((e) => e.className === student.className);
+  return exams.map((exam) => {
+    const result = store.examResults.find((r) => r.examId === exam.id && r.studentId === student.id);
+    return { ...exam, score: result?.score ?? null };
+  });
+}
+
 export async function listExams({ q } = {}) {
   let rows = [...getStore().exams];
   const query = String(q || "").trim().toLowerCase();
@@ -18,7 +28,7 @@ export async function createExam(payload) {
 export async function updateExam(id, payload) {
   const store = getStore();
   const idx = store.exams.findIndex((r) => r.id === id);
-  if (idx === -1) throw new Error("Sinav bulunamadi.");
+  if (idx === -1) throw new Error("Sınav bulunamadı.");
   store.exams[idx] = { ...store.exams[idx], ...payload };
   return store.exams[idx];
 }

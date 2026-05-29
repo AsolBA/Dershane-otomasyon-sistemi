@@ -36,9 +36,15 @@ export default function App() {
             <Route path="/notifications" element={<NotificationsPage />} />
           </Route>
 
-          <Route element={<RoleGate allow={[ROLES.ADMIN, ROLES.DIRECTOR, ROLES.TEACHER]} />}>
+          <Route element={<RoleGate allow={[ROLES.ADMIN, ROLES.DIRECTOR, ROLES.TEACHER, ROLES.STUDENT]} />}>
             <Route path="/schedules" element={<SchedulesPage />} />
+          </Route>
+
+          <Route element={<RoleGate allow={[ROLES.ADMIN, ROLES.DIRECTOR, ROLES.TEACHER, ROLES.PARENT]} />}>
             <Route path="/attendance" element={<AttendancePage />} />
+          </Route>
+
+          <Route element={<RoleGate allow={[ROLES.ADMIN, ROLES.DIRECTOR, ROLES.TEACHER]} />}>
             <Route path="/announcements" element={<AnnouncementsPage />} />
           </Route>
 

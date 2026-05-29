@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ROLES, useAuth } from "../auth/AuthContext";
+import StudentScheduleReadOnly from "../components/StudentScheduleReadOnly";
 import { coursesService, schedulesService, teachersService } from "../services";
 import { findScheduleConflicts } from "../utils/scheduleConflict";
+import { formatDay } from "../utils/labels";
 
 const emptyForm = {
   day: "Monday",
@@ -15,6 +18,14 @@ const emptyForm = {
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 export default function SchedulesPage() {
+  const { user } = useAuth();
+  if (user?.role === ROLES.STUDENT) {
+    return <StudentScheduleReadOnly />;
+  }
+  return <ScheduleAdminPage />;
+}
+
+function ScheduleAdminPage() {
   const [query, setQuery] = useState("");
   const [dayFilter, setDayFilter] = useState("ALL");
   const [rows, setRows] = useState([]);
@@ -215,7 +226,7 @@ export default function SchedulesPage() {
               {!loading
                 ? rows.map((r) => (
                 <tr key={r.id}>
-                  <td style={{ fontWeight: 600 }}>{r.day}</td>
+                  <td style={{ fontWeight: 600 }}>{formatDay(r.day)}</td>
                   <td>
                     {r.startTime} - {r.endTime}
                   </td>
