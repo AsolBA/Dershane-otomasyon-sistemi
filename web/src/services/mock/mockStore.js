@@ -122,7 +122,7 @@ export const initialAnnouncements = [
   {
     id: "ann_1",
     title: "Veli Toplantisi",
-    body: "12-A sinifi icin veli toplantisi Cuma gunu saat 17:00'de.",
+    body: "12-A sınıfı için veli toplantısı Cuma günü saat 17:00'de.",
     scope: "CLASS",
     className: "12-A",
     createdAt: "2026-05-01T10:00:00+03:00"
@@ -130,7 +130,7 @@ export const initialAnnouncements = [
   {
     id: "ann_2",
     title: "Genel Duyuru",
-    body: "Deneme sinavi takvimi guncellendi. Lutfen panelden kontrol edin.",
+    body: "Deneme sınavı takvimi güncellendi. Lütfen panelden kontrol edin.",
     scope: "ALL",
     className: "",
     createdAt: "2026-05-01T11:30:00+03:00"
@@ -141,14 +141,14 @@ export const initialNotifications = [
   {
     id: "ntf_1",
     title: "Yeni duyuru",
-    body: "Genel duyuru yayinlandi.",
+    body: "Genel duyuru yayınlandı.",
     read: false,
     createdAt: "2026-05-01T11:31:00+03:00"
   },
   {
     id: "ntf_2",
-    title: "Program hatirlatmasi",
-    body: "Yarin 09:00'da Matematik dersi var.",
+    title: "Program hatırlatması",
+    body: "Yarın 09:00'da Matematik dersi var.",
     read: true,
     createdAt: "2026-04-30T09:00:00+03:00"
   }

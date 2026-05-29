@@ -10,7 +10,7 @@ export function useServiceList(listFn, filters) {
       const data = await listFn(filters);
       setRows(data);
     } catch (err) {
-      alert(err?.message || "Liste yuklenemedi.");
+      alert(err?.message || "Liste yüklenemedi.");
     } finally {
       setLoading(false);
     }

@@ -2,12 +2,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ROLES, useAuth } from "../auth/AuthContext";
 import ParentAttendanceReadOnly from "../components/ParentAttendanceReadOnly";
 import { attendanceService, schedulesService, studentsService, teachersService } from "../services";
+import { formatDay } from "../utils/labels";
+import { ATTENDANCE_STATUS_LABELS } from "../utils/labels";
 
 const STATUSES = [
-  { value: "PRESENT", label: "Geldi" },
-  { value: "ABSENT", label: "Gelmedi" },
-  { value: "LATE", label: "Gec kaldi" },
-  { value: "EXCUSED", label: "Mazeret" }
+  { value: "PRESENT", label: ATTENDANCE_STATUS_LABELS.PRESENT },
+  { value: "ABSENT", label: ATTENDANCE_STATUS_LABELS.ABSENT },
+  { value: "LATE", label: ATTENDANCE_STATUS_LABELS.LATE },
+  { value: "EXCUSED", label: ATTENDANCE_STATUS_LABELS.EXCUSED }
 ];
 
 function todayISO() {
@@ -48,7 +50,7 @@ function AttendanceAdminPage() {
         setTeachersRef(tch);
         if (sch[0]?.id) setScheduleId(sch[0].id);
       } catch (err) {
-        alert(err?.message || "Veri yuklenemedi.");
+        alert(err?.message || "Veri yüklenemedi.");
       }
     })();
   }, []);
@@ -85,7 +87,7 @@ function AttendanceAdminPage() {
   }, [schedule, date, studentsForClass]);
 
   useEffect(() => {
-    loadAttendance().catch((err) => alert(err?.message || "Yoklama yuklenemedi."));
+    loadAttendance().catch((err) => alert(err?.message || "Yoklama yüklenemedi."));
   }, [loadAttendance]);
 
   function setStatus(studentId, status) {
@@ -102,7 +104,7 @@ function AttendanceAdminPage() {
       await attendanceService.saveAttendance(schedule.id, date, rows);
       alert("Yoklama kaydedildi.");
     } catch (err) {
-      alert(err?.message || "Kayit basarisiz.");
+      alert(err?.message || "Kayıt başarısız.");
     }
   }
 
@@ -125,14 +127,14 @@ function AttendanceAdminPage() {
       <div className="page-header">
         <div>
           <h1>Yoklama</h1>
-          <p className="muted">Program satirini sec, siniftaki aktif ogrenciler icin durum isaretle (mock).</p>
+          <p className="muted">Program satırını seç, sınıftaki aktif öğrenciler için durum işaretleyin.</p>
         </div>
         <div className="toolbar">
           <button className="btn" type="button" onClick={() => markAll("PRESENT")}>
-            Tumunu geldi
+            Tümünü geldi
           </button>
           <button className="btn" type="button" onClick={() => markAll("ABSENT")}>
-            Tumunu gelmedi
+            Tümünü gelmedi
           </button>
           <button className="btn btn-primary" type="button" onClick={save}>
             Kaydet
@@ -143,11 +145,11 @@ function AttendanceAdminPage() {
       <div className="card" style={{ marginBottom: 14 }}>
         <div className="form-grid" style={{ gridTemplateColumns: "1fr 1fr", alignItems: "end" }}>
           <label>
-            Program satiri
+            Program satırı
             <select className="input" value={scheduleId} onChange={(e) => setScheduleId(e.target.value)}>
               {scheduleOptions.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.day} {s.startTime}-{s.endTime} | {s.className} | {teacherNameById.get(s.teacherId) || s.teacherId}
+                  {formatDay(s.day)} {s.startTime}-{s.endTime} | {s.className} | {teacherNameById.get(s.teacherId) || s.teacherId}
                 </option>
               ))}
             </select>
@@ -160,13 +162,13 @@ function AttendanceAdminPage() {
 
         {schedule ? (
           <div className="muted" style={{ marginTop: 10 }}>
-            Secilen sinif: <strong>{schedule.className}</strong> — Derslik: <strong>{schedule.room}</strong>
+            Seçilen sınıf: <strong>{schedule.className}</strong> — Derslik: <strong>{schedule.room}</strong>
           </div>
         ) : null}
       </div>
 
       <div className="card" style={{ marginBottom: 14 }}>
-        <div style={{ fontWeight: 700, marginBottom: 8 }}>Ozet</div>
+        <div style={{ fontWeight: 700, marginBottom: 8 }}>Özet</div>
         <div className="toolbar">
           {summary.map((s) => (
             <span key={s.value} className="pill">
@@ -181,7 +183,7 @@ function AttendanceAdminPage() {
           <table>
             <thead>
               <tr>
-                <th>Ogrenci</th>
+                <th>Öğrenci</th>
                 <th>Durum</th>
               </tr>
             </thead>
@@ -189,7 +191,7 @@ function AttendanceAdminPage() {
               {studentsForClass.length === 0 ? (
                 <tr>
                   <td colSpan={2} className="muted">
-                    Bu sinifta aktif ogrenci bulunamadi (mock veri).
+                    Bu sınıfta aktif öğrenci bulunamadı.
                   </td>
                 </tr>
               ) : null}

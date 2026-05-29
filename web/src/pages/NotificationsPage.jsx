@@ -10,7 +10,7 @@ export default function NotificationsPage() {
     try {
       setRows(await notificationsService.list());
     } catch (err) {
-      alert(err?.message || "Liste yuklenemedi.");
+      alert(err?.message || "Liste yüklenemedi.");
     } finally {
       setLoading(false);
     }
@@ -27,7 +27,7 @@ export default function NotificationsPage() {
       await notificationsService.markRead(id);
       await reload();
     } catch (err) {
-      alert(err?.message || "Islem basarisiz.");
+      alert(err?.message || "İşlem başarısız.");
     }
   }
 
@@ -36,7 +36,7 @@ export default function NotificationsPage() {
       await notificationsService.markAllRead();
       await reload();
     } catch (err) {
-      alert(err?.message || "Islem basarisiz.");
+      alert(err?.message || "İşlem başarısız.");
     }
   }
 
@@ -46,12 +46,12 @@ export default function NotificationsPage() {
         <div>
           <h1>Bildirimler</h1>
           <p className="muted">
-            Okunmamis: <strong>{unreadCount}</strong>
+            Okunmamış: <strong>{unreadCount}</strong>
           </p>
         </div>
         <div className="toolbar">
           <button className="btn" type="button" onClick={markAllRead} disabled={unreadCount === 0}>
-            Tumunu okundu yap
+            Tümünü okundu yap
           </button>
           <button className="btn" type="button" onClick={reload}>
             Yenile
@@ -74,7 +74,7 @@ export default function NotificationsPage() {
               {loading ? (
                 <tr>
                   <td colSpan={4} className="muted">
-                    Yukleniyor...
+                    Yükleniyor…
                   </td>
                 </tr>
               ) : null}
@@ -85,7 +85,7 @@ export default function NotificationsPage() {
                         <div style={{ fontWeight: r.read ? 600 : 800 }}>{r.title}</div>
                         <div className="muted">{r.body}</div>
                       </td>
-                      <td>{r.read ? <span className="pill ok">Okundu</span> : <span className="pill bad">Okunmadi</span>}</td>
+                      <td>{r.read ? <span className="pill ok">Okundu</span> : <span className="pill bad">Okunmadı</span>}</td>
                       <td className="muted">{new Date(r.createdAt).toLocaleString()}</td>
                       <td style={{ width: 160 }}>
                         <button className="btn btn-primary" type="button" disabled={r.read} onClick={() => markRead(r.id)}>

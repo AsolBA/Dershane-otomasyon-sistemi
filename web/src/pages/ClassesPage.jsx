@@ -23,7 +23,7 @@ export default function ClassesPage() {
     try {
       setRows(await classesService.list({ onlyActive, q: query }));
     } catch (err) {
-      alert(err?.message || "Liste yuklenemedi.");
+      alert(err?.message || "Liste yüklenemedi.");
     } finally {
       setLoading(false);
     }
@@ -66,7 +66,7 @@ export default function ClassesPage() {
     };
 
     if (!payload.name || !payload.gradeLevel || payload.capacity <= 0) {
-      alert("Sinif adi, seviye ve kapasite zorunlu.");
+      alert("Sınıf adı, seviye ve kapasite zorunlu.");
       return;
     }
 
@@ -76,18 +76,18 @@ export default function ClassesPage() {
       await reload();
       closeForm();
     } catch (err) {
-      alert(err?.message || "Kayit basarisiz.");
+      alert(err?.message || "Kayıt başarısız.");
     }
   }
 
   async function remove(id) {
-    if (!confirm("Bu kaydi silmek istiyor musun?")) return;
+    if (!confirm("Bu kaydı silmek istiyor musunuz?")) return;
     try {
       await classesService.remove(id);
       if (editingId === id) closeForm();
       await reload();
     } catch (err) {
-      alert(err?.message || "Silme basarisiz.");
+      alert(err?.message || "Silme başarısız.");
     }
   }
 
@@ -95,8 +95,8 @@ export default function ClassesPage() {
     <section>
       <div className="page-header">
         <div>
-          <h1>Siniflar</h1>
-          <p className="muted">Mock veri ile CRUD iskeleti. Ogrenci atama sonraki adim.</p>
+          <h1>Sınıflar</h1>
+          <p className="muted">Mock veri ile CRUD ekranı. Öğrenci atama sonraki adim.</p>
         </div>
         <div className="toolbar">
           <input className="input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Ara..." />
@@ -105,7 +105,7 @@ export default function ClassesPage() {
             Sadece aktif
           </label>
           <button className="btn btn-primary" type="button" onClick={openCreate}>
-            Yeni sinif
+            Yeni sınıf
           </button>
         </div>
       </div>
@@ -115,7 +115,7 @@ export default function ClassesPage() {
           <table>
             <thead>
               <tr>
-                <th>Sinif</th>
+                <th>Sınıf</th>
                 <th>Seviye</th>
                 <th>Kapasite</th>
                 <th>Durum</th>
@@ -126,7 +126,7 @@ export default function ClassesPage() {
               {loading ? (
                 <tr>
                   <td colSpan={5} className="muted">
-                    Yukleniyor...
+                    Yükleniyor…
                   </td>
                 </tr>
               ) : null}
@@ -142,7 +142,7 @@ export default function ClassesPage() {
                   <td style={{ width: 220 }}>
                     <div className="row-actions">
                       <button className="btn" type="button" onClick={() => openEdit(r)}>
-                        Duzenle
+                        Düzenle
                       </button>
                       <button className="btn btn-danger" type="button" onClick={() => remove(r.id)}>
                         Sil
@@ -155,7 +155,7 @@ export default function ClassesPage() {
               {!loading && rows.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="muted">
-                    Kayit bulunamadi.
+                    Kayıt bulunamadı.
                   </td>
                 </tr>
               ) : null}
@@ -168,14 +168,14 @@ export default function ClassesPage() {
         <div className="card" style={{ marginTop: 14 }}>
           <div className="page-header" style={{ marginBottom: 10 }}>
             <div>
-              <h2 style={{ margin: 0 }}>{editingId ? "Sinif duzenle" : "Yeni sinif"}</h2>
+              <h2 style={{ margin: 0 }}>{editingId ? "Sınıf düzenle" : "Yeni sınıf"}</h2>
               <p className="muted" style={{ margin: "6px 0 0" }}>
-                UML Class entity’sine denk basit alanlar: name + meta (gradeLevel/capacity).
+                Sınıf adı, seviye ve kapasite.
               </p>
             </div>
             <div className="toolbar">
               <button className="btn" type="button" onClick={closeForm}>
-                Iptal
+                İptal
               </button>
               <button className="btn btn-primary" type="button" onClick={save}>
                 Kaydet
@@ -185,7 +185,7 @@ export default function ClassesPage() {
 
           <div className="form-grid">
             <label>
-              Sinif adi
+              Sınıf adı
               <input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
             </label>
             <label>

@@ -21,7 +21,7 @@ export default function AnnouncementsPage() {
     try {
       setRows(await announcementsService.list({ q: query }));
     } catch (err) {
-      alert(err?.message || "Liste yuklenemedi.");
+      alert(err?.message || "Liste yüklenemedi.");
     } finally {
       setLoading(false);
     }
@@ -52,11 +52,11 @@ export default function AnnouncementsPage() {
     const className = scope === "CLASS" ? String(form.className || "").trim() : "";
 
     if (!title || !body) {
-      alert("Baslik ve icerik zorunlu.");
+      alert("Başlık ve içerik zorunludur.");
       return;
     }
     if (scope === "CLASS" && !className) {
-      alert("Sinif duyurusu icin sinif secimi zorunlu.");
+      alert("Sınıf duyurusu için sınıf seçimi zorunludur.");
       return;
     }
 
@@ -65,17 +65,17 @@ export default function AnnouncementsPage() {
       await reload();
       closeForm();
     } catch (err) {
-      alert(err?.message || "Kayit basarisiz.");
+      alert(err?.message || "Kayıt başarısız.");
     }
   }
 
   async function remove(id) {
-    if (!confirm("Bu duyuruyu silmek istiyor musun?")) return;
+    if (!confirm("Bu duyuruyu silmek istiyor musunuz?")) return;
     try {
       await announcementsService.remove(id);
       await reload();
     } catch (err) {
-      alert(err?.message || "Silme basarisiz.");
+      alert(err?.message || "Silme başarısız.");
     }
   }
 
@@ -84,7 +84,7 @@ export default function AnnouncementsPage() {
       <div className="page-header">
         <div>
           <h1>Duyurular</h1>
-          <p className="muted">Duyuru olusturma + listeleme (mock). Yeni duyuru bildirim merkezine duser.</p>
+          <p className="muted">Duyuru oluşturma ve listeleme. Yeni duyuru bildirim merkezine düşer.</p>
         </div>
         <div className="toolbar">
           <input className="input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Ara..." />
@@ -100,26 +100,26 @@ export default function AnnouncementsPage() {
             <div>
               <h2 style={{ margin: 0 }}>Yeni duyuru</h2>
               <p className="muted" style={{ margin: "6px 0 0" }}>
-                Kapsam: genel veya sinif bazli.
+                Kapsam: genel veya sınıf bazlı.
               </p>
             </div>
             <div className="toolbar">
               <button className="btn" type="button" onClick={closeForm}>
-                Iptal
+                İptal
               </button>
               <button className="btn btn-primary" type="button" onClick={save}>
-                Yayinla
+                Yayınla
               </button>
             </div>
           </div>
 
           <div className="form-grid">
             <label>
-              Baslik
+              Başlık
               <input value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} />
             </label>
             <label style={{ gridColumn: "1 / -1" }}>
-              Icerik
+              İçerik
               <textarea
                 rows={5}
                 value={form.body}
@@ -137,12 +137,12 @@ export default function AnnouncementsPage() {
               Kapsam
               <select className="input" value={form.scope} onChange={(e) => setForm((p) => ({ ...p, scope: e.target.value }))}>
                 <option value="ALL">Genel</option>
-                <option value="CLASS">Sinif</option>
+                <option value="CLASS">Sınıf</option>
               </select>
             </label>
             {form.scope === "CLASS" ? (
               <label>
-                Sinif
+                Sınıf
                 <select className="input" value={form.className} onChange={(e) => setForm((p) => ({ ...p, className: e.target.value }))}>
                   {classOptions.map((n) => (
                     <option key={n} value={n}>
@@ -171,7 +171,7 @@ export default function AnnouncementsPage() {
               {loading ? (
                 <tr>
                   <td colSpan={4} className="muted">
-                    Yukleniyor...
+                    Yükleniyor…
                   </td>
                 </tr>
               ) : null}
@@ -189,7 +189,7 @@ export default function AnnouncementsPage() {
                       <span className="pill">Genel</span>
                     ) : (
                       <span className="pill">
-                        Sinif: <strong>{r.className}</strong>
+                        Sınıf: <strong>{r.className}</strong>
                       </span>
                     )}
                   </td>
@@ -205,7 +205,7 @@ export default function AnnouncementsPage() {
               {!loading && rows.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="muted">
-                    Kayit bulunamadi.
+                    Kayıt bulunamadı.
                   </td>
                 </tr>
               ) : null}

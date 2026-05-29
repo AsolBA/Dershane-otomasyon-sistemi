@@ -23,7 +23,7 @@ export async function update(id, payload) {
   const dup = store.courses.some((r) => r.code === payload.code && r.id !== id);
   if (dup) throw new Error("Bu ders kodu zaten var.");
   const idx = store.courses.findIndex((r) => r.id === id);
-  if (idx === -1) throw new Error("Ders bulunamadi.");
+  if (idx === -1) throw new Error("Ders bulunamadı.");
   store.courses[idx] = { ...store.courses[idx], ...payload };
   return store.courses[idx];
 }

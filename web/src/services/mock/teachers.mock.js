@@ -22,7 +22,7 @@ export async function create(payload) {
 export async function update(id, payload) {
   const store = getStore();
   const idx = store.teachers.findIndex((r) => r.id === id);
-  if (idx === -1) throw new Error("Ogretmen bulunamadi.");
+  if (idx === -1) throw new Error("Öğretmen bulunamadı.");
   store.teachers[idx] = { ...store.teachers[idx], ...payload };
   return store.teachers[idx];
 }

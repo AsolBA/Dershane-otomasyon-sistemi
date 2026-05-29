@@ -20,9 +20,9 @@ export function findScheduleConflicts({ rows, candidate, ignoreId }) {
   const end = parseTimeToMinutes(candidate.endTime);
 
   const errors = [];
-  if (!day) errors.push("Gun zorunlu.");
+  if (!day) errors.push("Gün zorunlu.");
   if (start == null || end == null) errors.push("Saat formati HH:MM olmali.");
-  if (start != null && end != null && end <= start) errors.push("Bitis saati baslangictan sonra olmali.");
+  if (start != null && end != null && end <= start) errors.push("Bitiş saati baslangictan sonra olmali.");
 
   if (errors.length) return { ok: false, errors, conflicts: [] };
 
@@ -42,7 +42,7 @@ export function findScheduleConflicts({ rows, candidate, ignoreId }) {
     if (String(row.className).trim() === String(candidate.className).trim()) {
       conflicts.push({
         type: "CLASS",
-        message: `Sinif cakismasi: ${row.className} ayni gunde (${day}) ${row.startTime}-${row.endTime} araligiyla cakisiyor.`,
+        message: `Sınıf çakışması: ${row.className} ayni gunde (${day}) ${row.startTime}-${row.endTime} aralığıyla çakışıyor.`,
         row
       });
     }
@@ -51,7 +51,7 @@ export function findScheduleConflicts({ rows, candidate, ignoreId }) {
     if (String(row.teacherId) === String(candidate.teacherId)) {
       conflicts.push({
         type: "TEACHER",
-        message: `Ogretmen cakismasi: ayni gunde (${day}) ${row.startTime}-${row.endTime} araligiyla baska ders var.`,
+        message: `Öğretmen cakismasi: ayni gunde (${day}) ${row.startTime}-${row.endTime} araligiyla başka ders var.`,
         row
       });
     }
@@ -60,7 +60,7 @@ export function findScheduleConflicts({ rows, candidate, ignoreId }) {
     if (String(row.room || "").trim() && String(row.room).trim() === String(candidate.room || "").trim()) {
       conflicts.push({
         type: "ROOM",
-        message: `Derslik cakismasi: ${row.room} ayni gunde (${day}) ${row.startTime}-${row.endTime} araligiyla cakisiyor.`,
+        message: `Derslik çakışması: ${row.room} ayni gunde (${day}) ${row.startTime}-${row.endTime} aralığıyla çakışıyor.`,
         row
       });
     }

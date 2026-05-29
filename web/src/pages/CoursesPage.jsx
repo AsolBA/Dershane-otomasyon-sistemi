@@ -22,7 +22,7 @@ export default function CoursesPage() {
     try {
       setRows(await coursesService.list({ onlyActive, q: query }));
     } catch (err) {
-      alert(err?.message || "Liste yuklenemedi.");
+      alert(err?.message || "Liste yüklenemedi.");
     } finally {
       setLoading(false);
     }
@@ -62,7 +62,7 @@ export default function CoursesPage() {
     };
 
     if (!payload.name || !payload.code) {
-      alert("Ders adi ve kodu zorunlu.");
+      alert("Ders adı ve kodu zorunludur.");
       return;
     }
 
@@ -72,18 +72,18 @@ export default function CoursesPage() {
       await reload();
       closeForm();
     } catch (err) {
-      alert(err?.message || "Kayit basarisiz.");
+      alert(err?.message || "Kayıt başarısız.");
     }
   }
 
   async function remove(id) {
-    if (!confirm("Bu kaydi silmek istiyor musun?")) return;
+    if (!confirm("Bu kaydı silmek istiyor musunuz?")) return;
     try {
       await coursesService.remove(id);
       if (editingId === id) closeForm();
       await reload();
     } catch (err) {
-      alert(err?.message || "Silme basarisiz.");
+      alert(err?.message || "Silme başarısız.");
     }
   }
 
@@ -92,7 +92,7 @@ export default function CoursesPage() {
       <div className="page-header">
         <div>
           <h1>Dersler</h1>
-          <p className="muted">Mock veri ile CRUD iskeleti.</p>
+          <p className="muted">Mock veri ile CRUD ekranı.</p>
         </div>
         <div className="toolbar">
           <input className="input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Ara..." />
@@ -121,7 +121,7 @@ export default function CoursesPage() {
               {loading ? (
                 <tr>
                   <td colSpan={4} className="muted">
-                    Yukleniyor...
+                    Yükleniyor…
                   </td>
                 </tr>
               ) : null}
@@ -138,7 +138,7 @@ export default function CoursesPage() {
                   <td style={{ width: 220 }}>
                     <div className="row-actions">
                       <button className="btn" type="button" onClick={() => openEdit(r)}>
-                        Duzenle
+                        Düzenle
                       </button>
                       <button className="btn btn-danger" type="button" onClick={() => remove(r.id)}>
                         Sil
@@ -151,7 +151,7 @@ export default function CoursesPage() {
               {!loading && rows.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="muted">
-                    Kayit bulunamadi.
+                    Kayıt bulunamadı.
                   </td>
                 </tr>
               ) : null}
@@ -164,14 +164,14 @@ export default function CoursesPage() {
         <div className="card" style={{ marginTop: 14 }}>
           <div className="page-header" style={{ marginBottom: 10 }}>
             <div>
-              <h2 style={{ margin: 0 }}>{editingId ? "Ders duzenle" : "Yeni ders"}</h2>
+              <h2 style={{ margin: 0 }}>{editingId ? "Ders düzenle" : "Yeni ders"}</h2>
               <p className="muted" style={{ margin: "6px 0 0" }}>
-                UML Course entity’sine denk basit alanlar: name (+ kod olarak pratik bir ek alan).
+                Ders adı ve kodu.
               </p>
             </div>
             <div className="toolbar">
               <button className="btn" type="button" onClick={closeForm}>
-                Iptal
+                İptal
               </button>
               <button className="btn btn-primary" type="button" onClick={save}>
                 Kaydet
@@ -181,7 +181,7 @@ export default function CoursesPage() {
 
           <div className="form-grid">
             <label>
-              Ders adi
+              Ders adı
               <input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
             </label>
             <label>

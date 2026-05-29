@@ -26,7 +26,7 @@ export default function StudentsPage() {
       const data = await studentsService.list({ onlyActive, q: query });
       setRows(data);
     } catch (err) {
-      alert(err?.message || "Liste yuklenemedi.");
+      alert(err?.message || "Liste yüklenemedi.");
     } finally {
       setLoading(false);
     }
@@ -72,7 +72,7 @@ export default function StudentsPage() {
     };
 
     if (!payload.fullName || !payload.email || !payload.className) {
-      alert("Ad, e-posta ve sinif zorunlu.");
+      alert("Ad, e-posta ve sınıf zorunludur.");
       return;
     }
 
@@ -82,18 +82,18 @@ export default function StudentsPage() {
       await reload();
       closeForm();
     } catch (err) {
-      alert(err?.message || "Kayit basarisiz.");
+      alert(err?.message || "Kayıt başarısız.");
     }
   }
 
   async function remove(id) {
-    if (!confirm("Bu kaydi silmek istiyor musun?")) return;
+    if (!confirm("Bu kaydı silmek istiyor musunuz?")) return;
     try {
       await studentsService.remove(id);
       if (editingId === id) closeForm();
       await reload();
     } catch (err) {
-      alert(err?.message || "Silme basarisiz.");
+      alert(err?.message || "Silme başarısız.");
     }
   }
 
@@ -101,8 +101,8 @@ export default function StudentsPage() {
     <section>
       <div className="page-header">
         <div>
-          <h1>Ogrenciler</h1>
-          <p className="muted">Service layer uzerinden CRUD (mock veya API).</p>
+          <h1>Öğrenciler</h1>
+          <p className="muted">Servis katmanı üzerinden CRUD (mock veya API).</p>
         </div>
         <div className="toolbar">
           <input className="input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Ara..." />
@@ -111,7 +111,7 @@ export default function StudentsPage() {
             Sadece aktif
           </label>
           <button className="btn btn-primary" type="button" onClick={openCreate}>
-            Yeni ogrenci
+            Yeni öğrenci
           </button>
         </div>
       </div>
@@ -121,8 +121,8 @@ export default function StudentsPage() {
           <table>
             <thead>
               <tr>
-                <th>Ogrenci</th>
-                <th>Sinif</th>
+                <th>Öğrenci</th>
+                <th>Sınıf</th>
                 <th>Veli</th>
                 <th>Durum</th>
                 <th />
@@ -132,7 +132,7 @@ export default function StudentsPage() {
               {loading ? (
                 <tr>
                   <td colSpan={5} className="muted">
-                    Yukleniyor...
+                    Yükleniyor…
                   </td>
                 </tr>
               ) : null}
@@ -154,7 +154,7 @@ export default function StudentsPage() {
                   <td style={{ width: 220 }}>
                     <div className="row-actions">
                       <button className="btn" type="button" onClick={() => openEdit(r)}>
-                        Duzenle
+                        Düzenle
                       </button>
                       <button className="btn btn-danger" type="button" onClick={() => remove(r.id)}>
                         Sil
@@ -167,7 +167,7 @@ export default function StudentsPage() {
               {!loading && rows.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="muted">
-                    Kayit bulunamadi.
+                    Kayıt bulunamadı.
                   </td>
                 </tr>
               ) : null}
@@ -180,14 +180,14 @@ export default function StudentsPage() {
         <div className="card" style={{ marginTop: 14 }}>
           <div className="page-header" style={{ marginBottom: 10 }}>
             <div>
-              <h2 style={{ margin: 0 }}>{editingId ? "Ogrenci duzenle" : "Yeni ogrenci"}</h2>
+              <h2 style={{ margin: 0 }}>{editingId ? "Öğrenci düzenle" : "Yeni öğrenci"}</h2>
               <p className="muted" style={{ margin: "6px 0 0" }}>
-                Form alanlari SRS’deki ogrenci yonetimiyle uyumlu basit bir baslangic.
+                Öğrenci kayıt alanları.
               </p>
             </div>
             <div className="toolbar">
               <button className="btn" type="button" onClick={closeForm}>
-                Iptal
+                İptal
               </button>
               <button className="btn btn-primary" type="button" onClick={save}>
                 Kaydet
@@ -205,11 +205,11 @@ export default function StudentsPage() {
               <input value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} />
             </label>
             <label>
-              Sinif
+              Sınıf
               <input value={form.className} onChange={(e) => setForm((p) => ({ ...p, className: e.target.value }))} />
             </label>
             <label>
-              Veli adi
+              Veli adı
               <input value={form.parentName} onChange={(e) => setForm((p) => ({ ...p, parentName: e.target.value }))} />
             </label>
             <label>

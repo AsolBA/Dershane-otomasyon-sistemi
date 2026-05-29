@@ -34,7 +34,7 @@ export async function update(id, payload) {
   }
   const store = getStore();
   const idx = store.schedules.findIndex((r) => r.id === id);
-  if (idx === -1) throw new Error("Program satiri bulunamadi.");
+  if (idx === -1) throw new Error("Program satırı bulunamadı.");
   store.schedules[idx] = { ...store.schedules[idx], ...payload };
   return store.schedules[idx];
 }

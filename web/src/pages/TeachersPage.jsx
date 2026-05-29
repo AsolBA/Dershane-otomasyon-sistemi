@@ -24,7 +24,7 @@ export default function TeachersPage() {
     try {
       setRows(await teachersService.list({ onlyActive, q: query }));
     } catch (err) {
-      alert(err?.message || "Liste yuklenemedi.");
+      alert(err?.message || "Liste yüklenemedi.");
     } finally {
       setLoading(false);
     }
@@ -68,7 +68,7 @@ export default function TeachersPage() {
     };
 
     if (!payload.fullName || !payload.email || !payload.branch) {
-      alert("Ad, e-posta ve brans zorunlu.");
+      alert("Ad, e-posta ve branş zorunludur.");
       return;
     }
 
@@ -78,18 +78,18 @@ export default function TeachersPage() {
       await reload();
       closeForm();
     } catch (err) {
-      alert(err?.message || "Kayit basarisiz.");
+      alert(err?.message || "Kayıt başarısız.");
     }
   }
 
   async function remove(id) {
-    if (!confirm("Bu kaydi silmek istiyor musun?")) return;
+    if (!confirm("Bu kaydı silmek istiyor musunuz?")) return;
     try {
       await teachersService.remove(id);
       if (editingId === id) closeForm();
       await reload();
     } catch (err) {
-      alert(err?.message || "Silme basarisiz.");
+      alert(err?.message || "Silme başarısız.");
     }
   }
 
@@ -97,8 +97,8 @@ export default function TeachersPage() {
     <section>
       <div className="page-header">
         <div>
-          <h1>Ogretmenler</h1>
-          <p className="muted">Service layer uzerinden CRUD.</p>
+          <h1>Öğretmenler</h1>
+          <p className="muted">Servis katmanı üzerinden CRUD.</p>
         </div>
         <div className="toolbar">
           <input className="input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Ara..." />
@@ -107,7 +107,7 @@ export default function TeachersPage() {
             Sadece aktif
           </label>
           <button className="btn btn-primary" type="button" onClick={openCreate}>
-            Yeni ogretmen
+            Yeni öğretmen
           </button>
         </div>
       </div>
@@ -117,9 +117,9 @@ export default function TeachersPage() {
           <table>
             <thead>
               <tr>
-                <th>Ogretmen</th>
-                <th>Brans</th>
-                <th>Iletisim</th>
+                <th>Öğretmen</th>
+                <th>Branş</th>
+                <th>İletişim</th>
                 <th>Durum</th>
                 <th />
               </tr>
@@ -128,7 +128,7 @@ export default function TeachersPage() {
               {loading ? (
                 <tr>
                   <td colSpan={5} className="muted">
-                    Yukleniyor...
+                    Yükleniyor…
                   </td>
                 </tr>
               ) : null}
@@ -147,7 +147,7 @@ export default function TeachersPage() {
                   <td style={{ width: 220 }}>
                     <div className="row-actions">
                       <button className="btn" type="button" onClick={() => openEdit(r)}>
-                        Duzenle
+                        Düzenle
                       </button>
                       <button className="btn btn-danger" type="button" onClick={() => remove(r.id)}>
                         Sil
@@ -160,7 +160,7 @@ export default function TeachersPage() {
               {!loading && rows.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="muted">
-                    Kayit bulunamadi.
+                    Kayıt bulunamadı.
                   </td>
                 </tr>
               ) : null}
@@ -173,14 +173,14 @@ export default function TeachersPage() {
         <div className="card" style={{ marginTop: 14 }}>
           <div className="page-header" style={{ marginBottom: 10 }}>
             <div>
-              <h2 style={{ margin: 0 }}>{editingId ? "Ogretmen duzenle" : "Yeni ogretmen"}</h2>
+              <h2 style={{ margin: 0 }}>{editingId ? "Öğretmen düzenle" : "Yeni öğretmen"}</h2>
               <p className="muted" style={{ margin: "6px 0 0" }}>
-                Brans alani UML’deki Teacher.branch ile uyumlu basit bir karsilik.
+                Branş alani UML’deki Teacher.branch ile uyumlu basit bir karsilik.
               </p>
             </div>
             <div className="toolbar">
               <button className="btn" type="button" onClick={closeForm}>
-                Iptal
+                İptal
               </button>
               <button className="btn btn-primary" type="button" onClick={save}>
                 Kaydet
@@ -198,7 +198,7 @@ export default function TeachersPage() {
               <input value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} />
             </label>
             <label>
-              Brans
+              Branş
               <input value={form.branch} onChange={(e) => setForm((p) => ({ ...p, branch: e.target.value }))} />
             </label>
             <label>
