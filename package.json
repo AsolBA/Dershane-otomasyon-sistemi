@@ -10,7 +10,11 @@
   "scripts": {
     "dev:backend": "npm run dev -w backend",
     "dev:web": "npm run dev -w web",
-    "dev:mobile": "npm run dev -w mobile",
+    "dev:mobile": "npm --prefix mobile run dev",
     "lint": "npm run lint -ws"
+  },
+  "overrides": {
+    "react": "19.1.0",
+    "react-native": "0.81.5"
   }
 }
