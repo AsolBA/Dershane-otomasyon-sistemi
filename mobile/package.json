@@ -2,9 +2,6 @@
   "name": "mobile",
   "private": true,
   "version": "0.1.0",
-  "installConfig": {
-    "hoistingLimits": "workspaces"
-  },
   "main": "index.js",
   "scripts": {
     "dev": "expo start",
@@ -18,7 +15,7 @@
     "@react-navigation/bottom-tabs": "^7.2.0",
     "@react-navigation/native": "^7.0.14",
     "@react-navigation/native-stack": "^7.2.0",
-    "expo": "^54.0.0",
+    "expo": "~54.0.35",
     "expo-status-bar": "~3.0.9",
     "react": "19.1.0",
     "react-native": "0.81.5",

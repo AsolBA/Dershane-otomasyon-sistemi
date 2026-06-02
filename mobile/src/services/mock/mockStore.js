@@ -1,5 +1,5 @@
 export const initialStudents = [
-  { id: "stu_1", fullName: "Ayse Yilmaz", email: "ayse@student.local", className: "12-A", active: true },
+  { id: "stu_1", fullName: "Ayşe Yılmaz", email: "ayse@student.local", className: "12-A", active: true },
   { id: "stu_2", fullName: "Can Demir", email: "can@student.local", className: "11-B", active: true }
 ];
 
@@ -37,18 +37,20 @@ export const initialSchedules = [
 export const initialAnnouncements = [
   {
     id: "ann_1",
-    title: "Veli Toplantisi",
-    body: "12-A sinifi icin veli toplantisi Cuma 17:00.",
+    title: "Veli Toplantısı",
+    body: "12-A sınıfı velileri için Cuma günü saat 17:00'de okul konferans salonunda veli toplantısı yapılacaktır.\n\nGündem:\n• Sınav takvimi\n• Yaz okulu programı\n• Devamsızlık bilgilendirmesi\n\nKatılımınızı rica ederiz.",
     scope: "CLASS",
     className: "12-A",
+    author: "Kurum Müdürlüğü",
     createdAt: "2026-05-01T10:00:00+03:00"
   },
   {
     id: "ann_2",
     title: "Genel Duyuru",
-    body: "Deneme sinavi takvimi guncellendi.",
+    body: "Deneme sınavı takvimi güncellenmiştir. Tüm öğrencilerimiz panelden veya mobil uygulamadan güncel programı kontrol edebilir.\n\nSorularınız için rehber öğretmeninize başvurabilirsiniz.",
     scope: "ALL",
     className: "",
+    author: "Admin",
     createdAt: "2026-05-01T11:30:00+03:00"
   }
 ];
@@ -57,7 +59,7 @@ export const initialNotifications = [
   {
     id: "ntf_1",
     title: "Yeni duyuru",
-    body: "Genel duyuru yayinlandi.",
+    body: "Genel duyuru yayınlandı.",
     read: false,
     createdAt: "2026-05-01T11:31:00+03:00"
   }

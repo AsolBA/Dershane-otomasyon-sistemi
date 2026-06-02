@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "../../auth/AuthContext";
 import { schedulesService } from "../../services";
-import { colors, spacing } from "../../theme";
+import { formatDay } from "../../utils/labels";
+import { colors, commonStyles, radius, shadow, spacing } from "../../theme";
 
 export default function ScheduleScreen() {
   const { user } = useAuth();
@@ -15,7 +16,7 @@ export default function ScheduleScreen() {
       const data = await schedulesService.listForClass(user?.className || "12-A");
       setRows(data);
     } catch (err) {
-      alert(err?.message || "Program yuklenemedi.");
+      alert(err?.message || "Program yüklenemedi.");
     }
   }, [user?.className]);
 
@@ -47,11 +48,11 @@ export default function ScheduleScreen() {
       data={rows}
       keyExtractor={(item) => item.id}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      ListEmptyComponent={<Text style={styles.muted}>Program kaydi yok.</Text>}
+      ListEmptyComponent={<Text style={commonStyles.empty}>Program kaydı yok.</Text>}
       renderItem={({ item }) => (
         <View style={styles.card}>
           <Text style={styles.title}>
-            {item.day} {item.startTime}-{item.endTime}
+            {formatDay(item.day)} {item.startTime}–{item.endTime}
           </Text>
           <Text style={styles.muted}>
             {item.courseName} — {item.room}
@@ -66,12 +67,13 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.bg },
   list: { padding: spacing.md, backgroundColor: colors.bg },
   card: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
     padding: spacing.md,
     marginBottom: spacing.sm,
     borderWidth: 1,
-    borderColor: "#e5e7eb"
+    borderColor: colors.border,
+    ...shadow.card
   },
   title: { fontSize: 16, fontWeight: "700", color: colors.text },
   muted: { marginTop: 4, color: colors.muted }

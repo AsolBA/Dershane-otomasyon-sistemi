@@ -2,14 +2,8 @@ import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "../../auth/AuthContext";
 import { attendanceService } from "../../services";
-import { colors, spacing } from "../../theme";
-
-const LABELS = {
-  PRESENT: "Geldi",
-  ABSENT: "Gelmedi",
-  LATE: "Gec kaldi",
-  EXCUSED: "Mazeret"
-};
+import { ATTENDANCE_STATUS_LABELS } from "../../utils/labels";
+import { colors, commonStyles, radius, shadow, spacing } from "../../theme";
 
 export default function AttendanceScreen() {
   const { user } = useAuth();
@@ -22,7 +16,7 @@ export default function AttendanceScreen() {
       const data = await attendanceService.listAttendanceForParent(user?.linkedStudentId);
       setRows(data);
     } catch (err) {
-      alert(err?.message || "Devamsizlik yuklenemedi.");
+      alert(err?.message || "Devamsızlık yüklenemedi.");
     }
   }, [user?.linkedStudentId]);
 
@@ -54,7 +48,7 @@ export default function AttendanceScreen() {
       data={rows}
       keyExtractor={(item) => item.date}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      ListEmptyComponent={<Text style={styles.muted}>Kayit yok.</Text>}
+      ListEmptyComponent={<Text style={commonStyles.empty}>Kayıt yok.</Text>}
       renderItem={({ item }) => (
         <View style={styles.card}>
           <Text style={styles.date}>{item.date}</Text>
@@ -69,7 +63,9 @@ function StatusPill({ status }) {
   const bad = status === "ABSENT";
   return (
     <View style={[styles.pill, bad ? styles.pillBad : styles.pillOk]}>
-      <Text style={[styles.pillText, bad ? styles.pillTextBad : styles.pillTextOk]}>{LABELS[status] || status}</Text>
+      <Text style={[styles.pillText, bad ? styles.pillTextBad : styles.pillTextOk]}>
+        {ATTENDANCE_STATUS_LABELS[status] || status}
+      </Text>
     </View>
   );
 }
@@ -81,12 +77,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: colors.card,
-    borderRadius: 12,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
     padding: spacing.md,
     marginBottom: spacing.sm,
     borderWidth: 1,
-    borderColor: "#e5e7eb"
+    borderColor: colors.border,
+    ...shadow.card
   },
   date: { fontWeight: "700", color: colors.text },
   muted: { color: colors.muted, textAlign: "center", marginTop: spacing.lg },

@@ -1,10 +1,11 @@
 import React from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { ROLES, useAuth } from "../auth/AuthContext";
 import LoginScreen from "../screens/LoginScreen";
 import StudentTabs from "./StudentTabs";
 import ParentTabs from "./ParentTabs";
+import { colors, spacing } from "../theme";
 
 const Stack = createNativeStackNavigator();
 
@@ -13,8 +14,12 @@ export default function AppNavigator() {
 
   if (booting) {
     return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-        <ActivityIndicator size="large" />
+      <View style={styles.splash}>
+        <View style={styles.logo}>
+          <Text style={styles.logoText}>D</Text>
+        </View>
+        <Text style={styles.splashTitle}>Dershane</Text>
+        <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: spacing.lg }} />
       </View>
     );
   }
@@ -31,3 +36,22 @@ export default function AppNavigator() {
     </Stack.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  splash: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.bg
+  },
+  logo: {
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  logoText: { color: "#fff", fontSize: 32, fontWeight: "800" },
+  splashTitle: { marginTop: spacing.md, fontSize: 22, fontWeight: "800", color: colors.text }
+});

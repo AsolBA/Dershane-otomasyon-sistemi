@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import StatCard from "../../components/StatCard";
+import WelcomeBanner from "../../components/WelcomeBanner";
 import RefreshableScreen from "../../components/RefreshableScreen";
 import { useAuth } from "../../auth/AuthContext";
 import { attendanceService, examsService, notificationsService } from "../../services";
-import { colors, spacing } from "../../theme";
+import { colors, radius, shadow, spacing } from "../../theme";
 
 export default function ParentHomeScreen() {
   const { user, logout } = useAuth();
@@ -15,12 +16,13 @@ export default function ParentHomeScreen() {
 
   const reload = useCallback(async () => {
     try {
-      const profile = await attendanceService.getStudentProfile(user?.linkedStudentId);
+      const studentId = user?.linkedStudentId;
+      const profile = await attendanceService.getStudentProfile(studentId);
       setStudent(profile);
 
       const [attendance, exams, notifications] = await Promise.all([
-        attendanceService.listAttendanceForParent(user?.linkedStudentId),
-        examsService.listExamsForParent(user?.linkedStudentId),
+        attendanceService.listAttendanceForParent(studentId),
+        examsService.listExamsForParent(studentId),
         notificationsService.list()
       ]);
 
@@ -30,7 +32,7 @@ export default function ParentHomeScreen() {
         unread: notifications.filter((n) => !n.read).length
       });
     } catch (err) {
-      alert(err?.message || "Ozet yuklenemedi.");
+      alert(err?.message || "Özet yüklenemedi.");
     }
   }, [user?.linkedStudentId]);
 
@@ -50,15 +52,14 @@ export default function ParentHomeScreen() {
 
   return (
     <RefreshableScreen refreshing={refreshing} onRefresh={onRefresh}>
-      <Text style={styles.title}>Veli paneli</Text>
-      <Text style={styles.muted}>Hos geldin, {user?.name}</Text>
+      <WelcomeBanner title="Veli paneli" subtitle={`Hoş geldiniz, ${user?.name || "Veli"}`} />
 
       {loading ? (
         <ActivityIndicator style={{ marginTop: spacing.lg }} />
       ) : (
         <>
           <View style={styles.card}>
-            <Text style={styles.cardLabel}>Ogrenci</Text>
+            <Text style={styles.cardLabel}>Öğrenci</Text>
             <Text style={styles.cardValue}>{student?.fullName}</Text>
             <Text style={styles.muted}>
               {student?.className} — {student?.email}
@@ -66,30 +67,30 @@ export default function ParentHomeScreen() {
           </View>
 
           <View style={styles.grid}>
-            <StatCard label="Devamsiz" value={String(stats.absent)} hint="Bu donem" />
-            <StatCard label="Sinav" value={String(stats.exams)} hint="Sonuc kaydi" />
-            <StatCard label="Bildirim" value={String(stats.unread)} hint="Okunmamis" />
+            <StatCard label="Devamsız" value={String(stats.absent)} hint="Bu dönem" />
+            <StatCard label="Sınav" value={String(stats.exams)} hint="Sonuç kaydı" />
+            <StatCard label="Bildirim" value={String(stats.unread)} hint="Okunmamış" />
           </View>
         </>
       )}
 
       <Pressable style={styles.logout} onPress={logout}>
-        <Text style={styles.logoutText}>Cikis yap</Text>
+        <Text style={styles.logoutText}>Çıkış yap</Text>
       </Pressable>
     </RefreshableScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  title: { fontSize: 22, fontWeight: "800", color: colors.text },
-  muted: { marginTop: spacing.xs, color: colors.muted },
+  muted: { marginTop: spacing.xs, color: colors.muted, fontSize: 14 },
   card: {
-    marginTop: spacing.lg,
-    backgroundColor: colors.card,
-    borderRadius: 14,
+    marginBottom: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
     padding: spacing.md,
     borderWidth: 1,
-    borderColor: "#e5e7eb"
+    borderColor: colors.border,
+    ...shadow.card
   },
   cardLabel: { fontSize: 12, color: colors.muted, textTransform: "uppercase" },
   cardValue: { marginTop: 4, fontSize: 18, fontWeight: "700", color: colors.text },

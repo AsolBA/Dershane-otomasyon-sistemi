@@ -10,7 +10,7 @@ export async function login({ email, password, role }) {
   const user = {
     id: safeRole === "PARENT" ? "parent_1" : "stu_1",
     email: safeEmail,
-    name: safeRole === "PARENT" ? "Veli Kullanici" : "Ayse Yilmaz",
+    name: safeRole === "PARENT" ? "Mehmet Yılmaz" : "Ayşe Yılmaz",
     role: safeRole,
     className: "12-A",
     linkedStudentId: "stu_1"

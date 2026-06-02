@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import StatCard from "../../components/StatCard";
+import WelcomeBanner from "../../components/WelcomeBanner";
 import RefreshableScreen from "../../components/RefreshableScreen";
 import { useAuth } from "../../auth/AuthContext";
 import { examsService, notificationsService, schedulesService } from "../../services";
@@ -25,7 +26,7 @@ export default function StudentHomeScreen() {
         unread: notifications.filter((n) => !n.read).length
       });
     } catch (err) {
-      alert(err?.message || "Ozet yuklenemedi.");
+      alert(err?.message || "Özet yüklenemedi.");
     }
   }, [user]);
 
@@ -45,30 +46,30 @@ export default function StudentHomeScreen() {
 
   return (
     <RefreshableScreen refreshing={refreshing} onRefresh={onRefresh}>
-      <Text style={styles.title}>Merhaba, {user?.name}</Text>
-      <Text style={styles.muted}>Sinif: {user?.className || "-"}</Text>
+      <WelcomeBanner
+        title={`Merhaba, ${user?.name || "Öğrenci"}`}
+        subtitle={`Sınıf: ${user?.className || "—"} · Özet bilgiler aşağıda`}
+      />
 
       {loading ? (
         <ActivityIndicator style={{ marginTop: spacing.lg }} />
       ) : (
         <View style={styles.grid}>
-          <StatCard label="Sinav" value={String(stats.exams)} hint="Kayitli sonuc" />
-          <StatCard label="Ders" value={String(stats.schedule)} hint="Haftalik program" />
-          <StatCard label="Bildirim" value={String(stats.unread)} hint="Okunmamis" />
+          <StatCard label="Sınav" value={String(stats.exams)} hint="Kayıtlı sonuç" />
+          <StatCard label="Ders" value={String(stats.schedule)} hint="Haftalık program" />
+          <StatCard label="Bildirim" value={String(stats.unread)} hint="Okunmamış" />
         </View>
       )}
 
       <Pressable style={styles.logout} onPress={logout}>
-        <Text style={styles.logoutText}>Cikis yap</Text>
+        <Text style={styles.logoutText}>Çıkış yap</Text>
       </Pressable>
     </RefreshableScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  title: { fontSize: 22, fontWeight: "800", color: colors.text },
-  muted: { marginTop: spacing.xs, color: colors.muted },
-  grid: { marginTop: spacing.lg, flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   logout: {
     marginTop: spacing.lg,
     alignSelf: "flex-start",

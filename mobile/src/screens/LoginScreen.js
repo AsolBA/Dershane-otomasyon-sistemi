@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,7 +12,7 @@ import {
 } from "react-native";
 import { ROLES, useAuth } from "../auth/AuthContext";
 import { USE_MOCK_API } from "../services";
-import { colors, spacing } from "../theme";
+import { colors, radius, shadow, spacing } from "../theme";
 
 export default function LoginScreen() {
   const { login } = useAuth();
@@ -26,41 +28,68 @@ export default function LoginScreen() {
     try {
       await login({ email, password, role });
     } catch (err) {
-      setError(err?.message || "Giris basarisiz.");
+      setError(err?.message || "Giriş başarısız.");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Dershane</Text>
-      <Text style={styles.subtitle}>{USE_MOCK_API ? "Mock giris (gelistirme)" : "Hesabinla giris yap"}</Text>
+    <KeyboardAvoidingView style={styles.wrap} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <View style={styles.hero}>
+          <View style={styles.logo}>
+            <Text style={styles.logoText}>D</Text>
+          </View>
+          <Text style={styles.title}>Dershane</Text>
+          <Text style={styles.heroSub}>Öğrenci & veli mobil paneli</Text>
+        </View>
 
-      <View style={styles.card}>
-        <Text style={styles.label}>E-posta</Text>
-        <TextInput style={styles.input} value={email} onChangeText={setEmail} autoCapitalize="none" />
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Giriş yap</Text>
+          <Text style={styles.cardSub}>
+            {USE_MOCK_API ? "Geliştirme modu (mock)" : "Hesabınızla devam edin"}
+          </Text>
 
-        <Text style={styles.label}>Sifre</Text>
-        <TextInput style={styles.input} value={password} onChangeText={setPassword} secureTextEntry />
+          <Text style={styles.label}>E-posta</Text>
+          <TextInput
+            style={styles.input}
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            placeholder="ornek@dershane.local"
+            placeholderTextColor={colors.muted}
+          />
 
-        {USE_MOCK_API ? (
-          <>
-            <Text style={styles.label}>Rol (mock)</Text>
-            <View style={styles.roleRow}>
-              <RoleChip label="Ogrenci" active={role === ROLES.STUDENT} onPress={() => setRole(ROLES.STUDENT)} />
-              <RoleChip label="Veli" active={role === ROLES.PARENT} onPress={() => setRole(ROLES.PARENT)} />
-            </View>
-          </>
-        ) : null}
+          <Text style={styles.label}>Şifre</Text>
+          <TextInput
+            style={styles.input}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            placeholder="••••••••"
+            placeholderTextColor={colors.muted}
+          />
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+          {USE_MOCK_API ? (
+            <>
+              <Text style={styles.label}>Rol</Text>
+              <View style={styles.roleRow}>
+                <RoleChip label="Öğrenci" active={role === ROLES.STUDENT} onPress={() => setRole(ROLES.STUDENT)} />
+                <RoleChip label="Veli" active={role === ROLES.PARENT} onPress={() => setRole(ROLES.PARENT)} />
+              </View>
+            </>
+          ) : null}
 
-        <Pressable style={styles.button} onPress={onSubmit} disabled={loading}>
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Giris yap</Text>}
-        </Pressable>
-      </View>
-    </ScrollView>
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          <Pressable style={[styles.button, loading && styles.buttonDisabled]} onPress={onSubmit} disabled={loading}>
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Giriş yap</Text>}
+          </Pressable>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -73,38 +102,66 @@ function RoleChip({ label, active, onPress }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, backgroundColor: colors.bg, padding: spacing.lg, justifyContent: "center" },
-  title: { fontSize: 28, fontWeight: "800", color: colors.text, textAlign: "center" },
-  subtitle: { fontSize: 14, color: colors.muted, textAlign: "center", marginTop: spacing.xs, marginBottom: spacing.lg },
-  card: { backgroundColor: colors.card, borderRadius: 14, padding: spacing.md, gap: spacing.sm },
-  label: { fontSize: 13, color: colors.muted, marginTop: spacing.xs },
+  wrap: { flex: 1, backgroundColor: colors.bg },
+  scroll: { flexGrow: 1, padding: spacing.lg, justifyContent: "center" },
+  hero: { alignItems: "center", marginBottom: spacing.lg },
+  logo: {
+    width: 64,
+    height: 64,
+    borderRadius: 18,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing.md,
+    ...shadow.card
+  },
+  logoText: { color: "#fff", fontSize: 28, fontWeight: "800" },
+  title: { fontSize: 28, fontWeight: "800", color: colors.text, letterSpacing: -0.5 },
+  heroSub: { marginTop: 4, fontSize: 14, color: colors.muted },
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadow.card
+  },
+  cardTitle: { fontSize: 20, fontWeight: "800", color: colors.text },
+  cardSub: { marginTop: 4, marginBottom: spacing.md, fontSize: 14, color: colors.muted },
+  label: { fontSize: 13, fontWeight: "600", color: "#334155", marginTop: spacing.sm },
   input: {
     borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 15
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    marginTop: 6,
+    backgroundColor: "#fafafa",
+    color: colors.text
   },
-  roleRow: { flexDirection: "row", gap: spacing.sm },
+  roleRow: { flexDirection: "row", gap: spacing.sm, marginTop: 6 },
   chip: {
     flex: 1,
     borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 10,
-    paddingVertical: 10,
-    alignItems: "center"
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    paddingVertical: 12,
+    alignItems: "center",
+    backgroundColor: "#fafafa"
   },
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { color: colors.text, fontWeight: "600" },
   chipTextActive: { color: "#fff" },
   button: {
-    marginTop: spacing.md,
+    marginTop: spacing.lg,
     backgroundColor: colors.primary,
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: "center"
+    borderRadius: radius.sm,
+    paddingVertical: 15,
+    alignItems: "center",
+    ...shadow.card
   },
+  buttonDisabled: { opacity: 0.7 },
   buttonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
-  error: { color: colors.danger, marginTop: spacing.xs }
+  error: { color: colors.danger, marginTop: spacing.sm, fontSize: 13 }
 });

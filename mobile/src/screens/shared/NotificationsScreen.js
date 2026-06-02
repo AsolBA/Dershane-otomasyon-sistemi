@@ -9,7 +9,8 @@ import {
   View
 } from "react-native";
 import { notificationsService } from "../../services";
-import { colors, spacing } from "../../theme";
+import { formatDateTime } from "../../utils/labels";
+import { colors, commonStyles, radius, shadow, spacing } from "../../theme";
 
 export default function NotificationsScreen() {
   const [rows, setRows] = useState([]);
@@ -20,7 +21,7 @@ export default function NotificationsScreen() {
     try {
       setRows(await notificationsService.list());
     } catch (err) {
-      alert(err?.message || "Bildirimler yuklenemedi.");
+      alert(err?.message || "Bildirimler yüklenemedi.");
     }
   }, []);
 
@@ -43,7 +44,7 @@ export default function NotificationsScreen() {
       await notificationsService.markRead(id);
       await reload();
     } catch (err) {
-      alert(err?.message || "Islem basarisiz.");
+      alert(err?.message || "İşlem başarısız.");
     }
   }
 
@@ -52,7 +53,7 @@ export default function NotificationsScreen() {
       await notificationsService.markAllRead();
       await reload();
     } catch (err) {
-      alert(err?.message || "Islem basarisiz.");
+      alert(err?.message || "İşlem başarısız.");
     }
   }
 
@@ -69,9 +70,9 @@ export default function NotificationsScreen() {
   return (
     <View style={styles.wrap}>
       <View style={styles.toolbar}>
-        <Text style={styles.toolbarText}>Okunmamis: {unread}</Text>
+        <Text style={styles.toolbarText}>Okunmamış: {unread}</Text>
         <Pressable onPress={markAllRead} disabled={unread === 0}>
-          <Text style={[styles.link, unread === 0 && styles.linkDisabled]}>Tumunu okundu yap</Text>
+          <Text style={[styles.link, unread === 0 && styles.linkDisabled]}>Tümünü okundu yap</Text>
         </Pressable>
       </View>
 
@@ -80,12 +81,12 @@ export default function NotificationsScreen() {
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         contentContainerStyle={styles.list}
-        ListEmptyComponent={<Text style={styles.muted}>Bildirim yok.</Text>}
+        ListEmptyComponent={<Text style={commonStyles.empty}>Bildirim yok.</Text>}
         renderItem={({ item }) => (
           <View style={[styles.card, !item.read && styles.cardUnread]}>
             <Text style={styles.title}>{item.title}</Text>
             <Text style={styles.body}>{item.body}</Text>
-            <Text style={styles.meta}>{new Date(item.createdAt).toLocaleString()}</Text>
+            <Text style={styles.meta}>{formatDateTime(item.createdAt)}</Text>
             {!item.read ? (
               <Pressable style={styles.btn} onPress={() => markRead(item.id)}>
                 <Text style={styles.btnText}>Okundu</Text>
@@ -106,21 +107,25 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border
   },
   toolbarText: { fontWeight: "600", color: colors.text },
   link: { color: colors.primary, fontWeight: "700" },
   linkDisabled: { opacity: 0.4 },
   list: { padding: spacing.md, paddingTop: 0 },
   card: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
     padding: spacing.md,
     marginBottom: spacing.sm,
     borderWidth: 1,
-    borderColor: "#e5e7eb"
+    borderColor: colors.border,
+    ...shadow.card
   },
-  cardUnread: { borderColor: colors.primary },
+  cardUnread: { borderColor: colors.primary, backgroundColor: colors.primaryLight },
   title: { fontSize: 16, fontWeight: "700", color: colors.text },
   body: { marginTop: 6, color: colors.text },
   meta: { marginTop: 8, fontSize: 12, color: colors.muted },
