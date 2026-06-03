@@ -1,9 +1,17 @@
-# Mobile Uygulamasi
+# Mobile (Öğrenci & Veli)
 
-Bu klasor ogrenci ve veli mobil uygulamasi icindir.
+Expo + React Navigation.
 
-Planlanan yapilar:
+## Çalıştırma
 
-- `src/screens` ekranlar
-- `src/navigation` route yonetimi
-- `src/services` API istemcisi
+```bash
+cd mobile
+npm install
+npx expo start -c
+```
+
+## Özellikler
+
+- Türkçe arayüz metinleri
+- Duyurular: karta dokununca detay popup (modal)
+- Mock / API: `EXPO_PUBLIC_USE_MOCK_API`
