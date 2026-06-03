@@ -1,9 +1,11 @@
-# Web Uygulamasi
+# Web Uygulaması
 
-Bu klasor admin, mudur ve ogretmen paneli icin ayrilmistir.
+Yönetici, müdür, öğretmen, öğrenci ve veli paneli.
 
-Planlanan yapilar:
+## Service layer
 
-- `src/app` route yapisi
-- `src/components` tekrar kullanilabilir UI
-- `src/services` API istemci katmani
+- `src/services/index.js` — mock veya gerçek API seçimi
+- `VITE_USE_MOCK_API=true` (varsayılan) → `src/services/mock/*`
+- `VITE_USE_MOCK_API=false` → `src/services/api/*` + `VITE_API_BASE_URL`
+
+Örnek: `web/.env.example` dosyasını `web/.env` olarak kopyala.
