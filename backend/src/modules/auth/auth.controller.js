@@ -1,3 +1,7 @@
+// =============================================================================
+// modules/auth/auth.controller.js — HTTP katmani (auth)
+// Istek govdesini alir, service'i cagirir, sendSuccess ile JSON doner.
+// =============================================================================
 import { asyncHandler } from "../../utils/async-handler.js";
 import { sendSuccess } from "../../utils/api-response.js";
 import { AppError } from "../../utils/app-error.js";

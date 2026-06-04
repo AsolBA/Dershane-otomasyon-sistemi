@@ -10,7 +10,7 @@
   "scripts": {
     "dev:backend": "npm run dev -w backend",
     "dev:web": "npm run dev -w web",
-    "dev:mobile": "npm run dev -w mobile",
+    "dev:mobile": "cd mobile && expo start",
     "lint": "npm run lint -ws"
   }
 }

@@ -1,3 +1,7 @@
+// =============================================================================
+// modules/health/health.controller.js — Sistem saglik kontrolu
+// GET /health — Docker ve sunumda "API ayakta mi?" testi icin kullanilir.
+// =============================================================================
 import { db } from "../../db.js";
 import { sendError, sendSuccess } from "../../utils/api-response.js";
 import { asyncHandler } from "../../utils/async-handler.js";

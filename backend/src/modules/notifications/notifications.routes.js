@@ -1,3 +1,4 @@
+// modules/notifications/* — Bildirim API
 import { Router } from "express";
 import { authenticate, authorize } from "../../middlewares/auth.js";
 import * as ctrl from "./notifications.controller.js";

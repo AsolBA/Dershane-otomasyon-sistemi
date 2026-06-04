@@ -58,7 +58,7 @@ export async function getTeacherById(id) {
 export async function createTeacher(payload) {
   const passwordHash = await hashPassword(payload.password ?? "ChangeMe123!");
 
-  return withTransaction(async (client) => {
+  const teacherId = await withTransaction(async (client) => {
     const roleRes = await client.query(`SELECT id FROM roles WHERE name = 'teacher'`);
     const roleId = roleRes.rows[0]?.id;
     if (!roleId) throw new AppError(500, "ROLE_TEACHER_MISSING", "teacher rolu bulunamadi.");
@@ -87,8 +87,10 @@ export async function createTeacher(payload) {
       `INSERT INTO teachers (user_id, branch) VALUES ($1,$2) RETURNING id`,
       [userId, payload.branch],
     );
-    return getTeacherById(teacherRow.rows[0].id);
+    return teacherRow.rows[0].id;
   });
+
+  return getTeacherById(teacherId);
 }
 
 export async function updateTeacher(id, payload) {

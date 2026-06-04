@@ -1,3 +1,4 @@
+// modules/users/* — Kullanici yonetimi (admin/manager)
 import { Router } from "express";
 import { authenticate } from "../../middlewares/auth.js";
 import { adminOrManager } from "../../middlewares/rbac.js";

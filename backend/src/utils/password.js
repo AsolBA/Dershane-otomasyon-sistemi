@@ -1,3 +1,7 @@
+// =============================================================================
+// utils/password.js — Sifre hash ve dogrulama (bcrypt)
+// Kayit/giris sirasinda duz sifre saklanmaz; password_hash karsilastirilir.
+// =============================================================================
 import bcrypt from "bcryptjs";
 import { config } from "../config.js";
 

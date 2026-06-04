@@ -1,4 +1,9 @@
 # Backend API Ozeti
+#
+# Bu dosya tum REST endpoint listesidir.
+# Web ve mobil ekipleri entegrasyonda bu dokumana gore baglandi.
+# Base URL: http://localhost:4000 — Auth disi isteklerde: Authorization: Bearer <token>
+#
 
 Base URL: `http://localhost:4000`
 

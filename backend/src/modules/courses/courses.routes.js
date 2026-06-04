@@ -1,3 +1,4 @@
+// modules/courses/* — Ders tanimlari API
 import { Router } from "express";
 import { authenticate, authorize } from "../../middlewares/auth.js";
 import * as ctrl from "./courses.controller.js";

@@ -1,3 +1,8 @@
+// =============================================================================
+// modules/students/students.service.js — Ogrenci is mantigi + SQL
+// Liste/filtreleme, createStudent (users + students transaction), guncelleme burada.
+// Diger moduller (teachers, classes...) ayni controller/service/routes yapisini kullanir.
+// =============================================================================
 import { query, withTransaction } from "../../db.js";
 import { AppError } from "../../utils/app-error.js";
 import { hashPassword } from "../../utils/password.js";
@@ -101,7 +106,7 @@ export async function createStudent(payload) {
   const pwd = payload.password ?? "ChangeMe123!";
   const passwordHash = await hashPassword(pwd);
 
-  return withTransaction(async (client) => {
+  const studentId = await withTransaction(async (client) => {
     const studentRoleRes = await client.query(`SELECT id FROM roles WHERE name = 'student'`);
     const studentRoleId = studentRoleRes.rows[0]?.id;
     if (!studentRoleId) {
@@ -146,8 +151,7 @@ export async function createStudent(payload) {
           payload.isActive,
         ],
       );
-      const studentId = insertedStudent.rows[0].id;
-      return getStudentById(studentId);
+      return insertedStudent.rows[0].id;
     } catch (error) {
       if (error.code === "23505") {
         throw new AppError(409, "STUDENT_NO_CONFLICT", "Ogrenci numarasi zaten kullaniliyor.");
@@ -155,6 +159,8 @@ export async function createStudent(payload) {
       throw error;
     }
   });
+
+  return getStudentById(studentId);
 }
 
 export async function updateStudent(id, payload) {

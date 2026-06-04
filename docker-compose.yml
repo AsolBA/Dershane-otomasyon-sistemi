@@ -1,3 +1,5 @@
+# Dershane Otomasyon — Docker Compose (Emirhan: backend + veritabani)
+# Sunum notu: Tek komutla postgres + API ayaga kalkar. Backend baslarken migrate + seed calisir.
 services:
   postgres:
     image: postgres:16-alpine

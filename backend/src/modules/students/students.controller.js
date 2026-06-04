@@ -1,3 +1,8 @@
+// =============================================================================
+// modules/students/students.controller.js — Ogrenci HTTP katmani
+// Validasyon, yetki kontrolu (veli sadece kendi cocugunu gorur), service cagrisi.
+// Web panelinden ogrenci ekleme bu modul uzerinden calisir.
+// =============================================================================
 import { asyncHandler } from "../../utils/async-handler.js";
 import { sendSuccess } from "../../utils/api-response.js";
 import { AppError } from "../../utils/app-error.js";

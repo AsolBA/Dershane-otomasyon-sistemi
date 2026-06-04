@@ -1,3 +1,7 @@
+// =============================================================================
+// middlewares/error-handler.js — Merkezi hata yakalama
+// Tum modullerdeki AppError ve beklenmeyen hatalar standart JSON formatina cevrilir.
+// =============================================================================
 import { sendError } from "../utils/api-response.js";
 
 export function notFoundHandler(_req, res) {

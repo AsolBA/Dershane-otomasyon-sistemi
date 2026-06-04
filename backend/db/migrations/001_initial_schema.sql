@@ -1,3 +1,8 @@
+-- =============================================================================
+-- 001_initial_schema.sql — Veritabani tablo semasi (migration)
+-- PostgreSQL tablolarinin ilk kurulumu. Roller, kullanicilar, ogrenciler,
+-- siniflar, dersler, program, yoklama, sinav, duyuru, bildirim iliskileri burada tanimlanir.
+-- =============================================================================
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";

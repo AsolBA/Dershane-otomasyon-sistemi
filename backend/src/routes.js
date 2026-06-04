@@ -1,3 +1,8 @@
+// =============================================================================
+// routes.js — API route haritasi
+// Tum modullerin URL prefix'leri burada toplanir (/api/auth, /api/students...).
+// /api/me = giris yapmış kullanicinin profili. /api/admin/ping = sadece admin test endpoint'i.
+// =============================================================================
 import { Router } from "express";
 import authRoutes from "./modules/auth/auth.routes.js";
 import usersRoutes from "./modules/users/users.routes.js";

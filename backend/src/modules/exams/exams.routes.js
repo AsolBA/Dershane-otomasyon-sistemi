@@ -1,3 +1,4 @@
+// modules/exams/* — Sinav ve sonuc API
 import { Router } from "express";
 import { authenticate, authorize } from "../../middlewares/auth.js";
 import * as ctrl from "./exams.controller.js";

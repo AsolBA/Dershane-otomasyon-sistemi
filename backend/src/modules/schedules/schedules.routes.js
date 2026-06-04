@@ -1,3 +1,4 @@
+// modules/schedules/* — Ders programi API
 import { Router } from "express";
 import { authenticate, authorize } from "../../middlewares/auth.js";
 import * as ctrl from "./schedules.controller.js";

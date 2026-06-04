@@ -1,3 +1,8 @@
+// =============================================================================
+// utils/api-response.js — Standart API cevap formati
+// Tum endpoint'ler { success, data, message } veya hata icin { success, error } doner.
+// Frontend ve mobil bu yapıyı bekler.
+// =============================================================================
 export function sendSuccess(res, data, message, statusCode = 200) {
   const payload = {
     success: true,

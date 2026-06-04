@@ -1,3 +1,7 @@
+// =============================================================================
+// modules/auth/auth.service.js — Giris is mantigi
+// Email/sifre kontrolu, JWT uretimi, refresh token DB'ye yazma burada yapilir.
+// =============================================================================
 import { query } from "../../db.js";
 import { AppError } from "../../utils/app-error.js";
 import { comparePassword } from "../../utils/password.js";

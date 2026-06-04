@@ -1,3 +1,4 @@
+// modules/attendance/* — Yoklama kayit ve rapor API
 import { Router } from "express";
 import { authenticate, authorize } from "../../middlewares/auth.js";
 import * as ctrl from "./attendance.controller.js";

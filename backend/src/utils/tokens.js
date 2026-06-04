@@ -1,3 +1,7 @@
+// =============================================================================
+// utils/tokens.js — JWT access token + refresh token uretimi
+// Login'de accessToken (kisa omurlu) ve refreshToken (DB'de hash'li saklanir) uretilir.
+// =============================================================================
 import crypto from "node:crypto";
 import jwt from "jsonwebtoken";
 import { config } from "../config.js";

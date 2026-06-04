@@ -1,3 +1,8 @@
+-- =============================================================================
+-- 001_seed_data.sql — Ornek (demo) veriler
+-- Sunum ve test icin hazir hesaplar: admin, ogretmen, veli, ogrenci.
+-- Tum sifreler seed sonrasi: Admin123!
+-- =============================================================================
 BEGIN;
 
 INSERT INTO roles (name, description)

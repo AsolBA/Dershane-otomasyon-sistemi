@@ -1,3 +1,4 @@
+// Integration test: Students API — Docker ayaktayken otomatik calisir (npm run test:integration)
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { authHeader, getAgent, loginAsAdmin } from "../helpers/http.js";

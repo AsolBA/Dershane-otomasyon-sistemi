@@ -1,3 +1,4 @@
+// modules/classes/* — Sinif yonetimi API
 import { Router } from "express";
 import { authenticate, authorize } from "../../middlewares/auth.js";
 import * as ctrl from "./classes.controller.js";

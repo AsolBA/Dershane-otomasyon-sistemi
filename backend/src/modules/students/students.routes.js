@@ -1,3 +1,7 @@
+// =============================================================================
+// modules/students/students.routes.js — Ogrenci API URL'leri
+// GET/POST /api/students, GET/PATCH /api/students/:id. Rol: admin/manager CRUD yapar.
+// =============================================================================
 import { Router } from "express";
 import { authenticate, authorize } from "../../middlewares/auth.js";
 import * as ctrl from "./students.controller.js";

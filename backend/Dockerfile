@@ -1,3 +1,8 @@
+# =============================================================================
+# Dockerfile — Backend container imaji
+# Node 20 Alpine; npm install + kaynak kod. Port 4000 expose edilir.
+# docker compose ile postgres'e baglanarak calisir.
+# =============================================================================
 FROM node:20-alpine
 
 WORKDIR /app

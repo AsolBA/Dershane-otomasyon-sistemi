@@ -1,3 +1,4 @@
+// modules/announcements/* — Duyuru API
 import { Router } from "express";
 import { authenticate, authorize } from "../../middlewares/auth.js";
 import * as ctrl from "./announcements.controller.js";

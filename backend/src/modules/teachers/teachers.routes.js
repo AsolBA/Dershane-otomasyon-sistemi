@@ -1,3 +1,4 @@
+// modules/teachers/* — Ogretmen CRUD API (students modulu ile ayni yapi)
 import { Router } from "express";
 import { authenticate, authorize } from "../../middlewares/auth.js";
 import * as ctrl from "./teachers.controller.js";

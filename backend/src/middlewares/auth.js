@@ -1,3 +1,8 @@
+// =============================================================================
+// middlewares/auth.js — JWT kimlik dogrulama ve rol kontrolu (RBAC)
+// authenticate = Bearer token dogrula, req.user doldur.
+// authorize('admin','manager') = sadece belirtilen roller gecer.
+// =============================================================================
 import { query } from "../db.js";
 import { AppError } from "../utils/app-error.js";
 import { verifyAccessToken } from "../utils/tokens.js";
