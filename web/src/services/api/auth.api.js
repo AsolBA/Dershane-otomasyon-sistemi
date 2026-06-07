@@ -8,11 +8,18 @@ export async function login({ email, password }) {
     body: JSON.stringify({ email, password })
   });
 
+  const u = data.user ?? {};
   const user = {
-    id: String(data.user?.id ?? data.userId),
-    email: data.user?.email ?? email,
-    name: data.user?.fullName || `${data.user?.first_name || ""} ${data.user?.last_name || ""}`.trim(),
-    role: apiRoleToUi(data.user?.role)
+    id: String(u.id ?? data.userId),
+    email: u.email ?? email,
+    name:
+      u.name ||
+      u.fullName ||
+      `${u.firstName || u.first_name || ""} ${u.lastName || u.last_name || ""}`.trim(),
+    role: apiRoleToUi(u.role),
+    studentId: u.studentId != null ? String(u.studentId) : undefined,
+    className: u.className || "",
+    linkedStudentId: u.linkedStudentId != null ? String(u.linkedStudentId) : undefined
   };
 
   writeStoredSession({

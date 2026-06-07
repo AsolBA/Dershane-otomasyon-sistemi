@@ -5,8 +5,9 @@ import * as ctrl from "./schedules.controller.js";
 
 const router = Router();
 const manage = authorize("admin", "manager", "teacher");
+const readSchedules = authorize("admin", "manager", "teacher", "student");
 
-router.get("/", authenticate, manage, ctrl.list);
+router.get("/", authenticate, readSchedules, ctrl.list);
 router.post("/conflict-check", authenticate, manage, ctrl.conflictCheck);
 router.post("/", authenticate, manage, ctrl.create);
 router.get("/:id", authenticate, manage, ctrl.getById);

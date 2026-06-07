@@ -1,18 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ROLES, useAuth } from "../auth/AuthContext";
 import StudentScheduleReadOnly from "../components/StudentScheduleReadOnly";
-import { coursesService, schedulesService, teachersService } from "../services";
-import { findScheduleConflicts } from "../utils/scheduleConflict";
+import { classesService, coursesService, schedulesService, teachersService } from "../services";
+import { findScheduleConflicts, normalizeTimeInput } from "../utils/scheduleConflict";
 import { formatDay } from "../utils/labels";
+import { CLASSROOMS, TEACHER_BRANCHES } from "../utils/constants";
 
 const emptyForm = {
   day: "Monday",
   startTime: "09:00",
   endTime: "10:00",
   className: "12-A",
-  teacherId: "tch_1",
-  courseId: "crs_1",
-  room: "A-101"
+  branch: "",
+  teacherId: "",
+  courseId: "",
+  room: CLASSROOMS[0]
 };
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -32,6 +34,7 @@ function ScheduleAdminPage() {
   const [loading, setLoading] = useState(true);
   const [teachers, setTeachers] = useState([]);
   const [courses, setCourses] = useState([]);
+  const [classes, setClasses] = useState([]);
 
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -52,73 +55,89 @@ function ScheduleAdminPage() {
     reload();
   }, [reload]);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const [t, c] = await Promise.all([
-          teachersService.list({ onlyActive: true }),
-          coursesService.list({ onlyActive: true })
-        ]);
-        setTeachers(t);
-        setCourses(c);
-      } catch {
-        /* ignore */
-      }
-    })();
+  const loadRefs = useCallback(async () => {
+    const [t, c, cls] = await Promise.all([
+      teachersService.list({ onlyActive: true }),
+      coursesService.list({ onlyActive: true }),
+      classesService.list({ onlyActive: true })
+    ]);
+    setTeachers(t);
+    setCourses(c);
+    setClasses(cls);
+    return { teachers: t, courses: c, classes: cls };
   }, []);
+
+  useEffect(() => {
+    loadRefs().catch(() => {});
+  }, [loadRefs]);
+
+  const filteredTeachers = useMemo(() => {
+    if (!form.branch) return teachers;
+    return teachers.filter((t) => t.branch === form.branch);
+  }, [teachers, form.branch]);
 
   const teacherNameById = useMemo(() => {
     const map = new Map();
-    for (const t of teachers) map.set(t.id, t.fullName);
+    for (const t of teachers) map.set(String(t.id), t.fullName);
     return map;
   }, [teachers]);
 
   const courseLabelById = useMemo(() => {
     const map = new Map();
-    for (const c of courses) map.set(c.id, `${c.name} (${c.code})`);
+    for (const c of courses) map.set(String(c.id), `${c.name} (${c.code})`);
     return map;
   }, [courses]);
 
   const conflictPreview = useMemo(() => {
-    // Basit bir “mevcut veri” cakisma ozeti (kaydetmeden de gorulsun)
-    const issues = [];
-    for (const r of rows) {
-      const res = findScheduleConflicts({ rows, candidate: r, ignoreId: r.id });
-      if (!res.ok) {
-        for (const c of res.conflicts) {
-          issues.push({ source: r, ...c });
-        }
-      }
-    }
-    // dedupe by message+sourceId+type
-    const key = (x) => `${x.type}|${x.source.id}|${x.row?.id || ""}|${x.message}`;
-    const seen = new Set();
-    return issues.filter((x) => {
-      const k = key(x);
-      if (seen.has(k)) return false;
-      seen.add(k);
-      return true;
-    });
-  }, [rows]);
+    if (!showForm) return [];
+    const candidate = {
+      ...form,
+      startTime: normalizeTimeInput(form.startTime),
+      endTime: normalizeTimeInput(form.endTime)
+    };
+    const res = findScheduleConflicts({ rows, candidate, ignoreId: editingId });
+    return res.conflicts;
+  }, [showForm, form, rows, editingId]);
 
-  function openCreate() {
+  async function openCreate() {
     setEditingId(null);
-    setForm(emptyForm);
+    const refs = await loadRefs().catch(() => ({ teachers, courses, classes }));
+    const defaultBranch = TEACHER_BRANCHES[0];
+    const branchTeachers = (refs.teachers || teachers).filter((t) => t.branch === defaultBranch);
+    const classList = refs.classes || classes;
+    setForm({
+      ...emptyForm,
+      className: classList[0]?.name || "12-A",
+      branch: defaultBranch,
+      teacherId: branchTeachers[0] ? String(branchTeachers[0].id) : "",
+      courseId: (refs.courses || courses)[0] ? String((refs.courses || courses)[0].id) : ""
+    });
     setShowForm(true);
   }
 
   function openEdit(row) {
+    const teacher = teachers.find((t) => String(t.id) === String(row.teacherId));
     setEditingId(row.id);
     setForm({
       day: row.day,
       startTime: row.startTime,
       endTime: row.endTime,
       className: row.className,
-      teacherId: row.teacherId,
-      courseId: row.courseId,
-      room: row.room || ""
+      branch: teacher?.branch || "",
+      teacherId: String(row.teacherId),
+      courseId: String(row.courseId),
+      room: row.room || CLASSROOMS[0]
     });
     setShowForm(true);
+  }
+
+  function onBranchChange(branch) {
+    const nextTeachers = teachers.filter((t) => t.branch === branch);
+    setForm((p) => ({
+      ...p,
+      branch,
+      teacherId: nextTeachers[0] ? String(nextTeachers[0].id) : ""
+    }));
   }
 
   function closeForm() {
@@ -130,8 +149,8 @@ function ScheduleAdminPage() {
   async function save() {
     const payload = {
       day: String(form.day).trim(),
-      startTime: String(form.startTime).trim(),
-      endTime: String(form.endTime).trim(),
+      startTime: normalizeTimeInput(form.startTime),
+      endTime: normalizeTimeInput(form.endTime),
       className: String(form.className).trim(),
       teacherId: String(form.teacherId).trim(),
       courseId: String(form.courseId).trim(),
@@ -143,10 +162,17 @@ function ScheduleAdminPage() {
       return;
     }
 
+    const conflictCheck = findScheduleConflicts({ rows, candidate: payload, ignoreId: editingId });
+    if (!conflictCheck.ok) {
+      const msg = [...conflictCheck.errors, ...conflictCheck.conflicts.map((c) => c.message)].join("\n");
+      alert(msg || "Program çakışması var.");
+      return;
+    }
+
     try {
       if (editingId) await schedulesService.update(editingId, payload);
       else await schedulesService.create(payload);
-      await reload();
+      await Promise.all([reload(), loadRefs()]);
       closeForm();
     } catch (err) {
       alert(err?.message || "Kayıt başarısız.");
@@ -196,6 +222,9 @@ function ScheduleAdminPage() {
                 <strong>{c.type}</strong>: {c.message}
               </li>
             ))}
+            <li className="muted" style={{ marginTop: 8 }}>
+              Farklı öğretmen + farklı sınıf aynı saatte eklenebilir. Çakışma yalnızca aynı öğretmen veya aynı sınıf için geçerlidir.
+            </li>
           </ul>
           {conflictPreview.length > 6 ? <div className="muted" style={{ marginTop: 8 }}>+ daha fazla...</div> : null}
         </div>
@@ -231,8 +260,8 @@ function ScheduleAdminPage() {
                     {r.startTime} - {r.endTime}
                   </td>
                   <td>{r.className}</td>
-                  <td className="muted">{courseLabelById.get(r.courseId) || r.courseId}</td>
-                  <td className="muted">{teacherNameById.get(r.teacherId) || r.teacherId}</td>
+                  <td className="muted">{courseLabelById.get(String(r.courseId)) || r.courseId}</td>
+                  <td className="muted">{teacherNameById.get(String(r.teacherId)) || r.teacherId}</td>
                   <td>{r.room}</td>
                   <td style={{ width: 220 }}>
                     <div className="row-actions">
@@ -299,13 +328,34 @@ function ScheduleAdminPage() {
             </label>
             <label>
               Sınıf
-              <input value={form.className} onChange={(e) => setForm((p) => ({ ...p, className: e.target.value }))} />
+              <select value={form.className} onChange={(e) => setForm((p) => ({ ...p, className: e.target.value }))}>
+                {classes.length === 0 ? <option value="">Önce sınıf oluşturun</option> : null}
+                {classes.map((c) => (
+                  <option key={c.id} value={c.name}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Branş
+              <select value={form.branch} onChange={(e) => onBranchChange(e.target.value)}>
+                <option value="">Branş seçin</option>
+                {TEACHER_BRANCHES.map((b) => (
+                  <option key={b} value={b}>
+                    {b}
+                  </option>
+                ))}
+              </select>
             </label>
             <label>
               Öğretmen
               <select value={form.teacherId} onChange={(e) => setForm((p) => ({ ...p, teacherId: e.target.value }))}>
-                {teachers.map((t) => (
-                  <option key={t.id} value={t.id}>
+                {filteredTeachers.length === 0 ? (
+                  <option value="">Bu branşta öğretmen yok</option>
+                ) : null}
+                {filteredTeachers.map((t) => (
+                  <option key={t.id} value={String(t.id)}>
                     {t.fullName} ({t.branch})
                   </option>
                 ))}
@@ -315,7 +365,7 @@ function ScheduleAdminPage() {
               Ders
               <select value={form.courseId} onChange={(e) => setForm((p) => ({ ...p, courseId: e.target.value }))}>
                 {courses.map((c) => (
-                  <option key={c.id} value={c.id}>
+                  <option key={c.id} value={String(c.id)}>
                     {c.name} ({c.code})
                   </option>
                 ))}
@@ -323,7 +373,13 @@ function ScheduleAdminPage() {
             </label>
             <label>
               Derslik
-              <input value={form.room} onChange={(e) => setForm((p) => ({ ...p, room: e.target.value }))} />
+              <select value={form.room} onChange={(e) => setForm((p) => ({ ...p, room: e.target.value }))}>
+                {CLASSROOMS.map((room) => (
+                  <option key={room} value={room}>
+                    {room}
+                  </option>
+                ))}
+              </select>
             </label>
           </div>
         </div>

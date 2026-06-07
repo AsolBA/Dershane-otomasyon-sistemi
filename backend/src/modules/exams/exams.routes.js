@@ -8,6 +8,7 @@ const writeExam = authorize("admin", "manager", "teacher");
 const writeResults = authorize("admin", "manager", "teacher");
 
 router.get("/", authenticate, ctrl.listExams);
+router.get("/my/results", authenticate, ctrl.listMyResults);
 router.post("/", authenticate, writeExam, ctrl.createExam);
 
 router.get("/:examId/results", authenticate, ctrl.listResults);

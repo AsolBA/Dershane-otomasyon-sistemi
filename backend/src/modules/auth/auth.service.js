@@ -5,6 +5,8 @@
 import { query } from "../../db.js";
 import { AppError } from "../../utils/app-error.js";
 import { comparePassword } from "../../utils/password.js";
+import * as classesSvc from "../classes/classes.service.js";
+import * as studentsSvc from "../students/students.service.js";
 import {
   generateRefreshToken,
   getRefreshTokenExpiresAt,
@@ -28,6 +30,36 @@ function mapPublicUser(user) {
     firstName: user.first_name,
     lastName: user.last_name,
   };
+}
+
+async function enrichPublicUser(user) {
+  const base = mapPublicUser(user);
+  const name = `${base.firstName || ""} ${base.lastName || ""}`.trim();
+
+  if (user.role_name === "student") {
+    const studentId = await studentsSvc.getStudentIdByUserId(user.id);
+    let className = "";
+    if (studentId) {
+      const st = await studentsSvc.getStudentById(studentId);
+      if (st.current_class_id) {
+        const cls = await classesSvc.getClassById(st.current_class_id);
+        className = cls.name;
+      }
+    }
+    return { ...base, name, studentId, className };
+  }
+
+  if (user.role_name === "parent") {
+    const parentId = await studentsSvc.getParentIdByUserId(user.id);
+    let linkedStudentId = null;
+    if (parentId) {
+      const list = await studentsSvc.listStudents({ parentId }, { page: 1, limit: 1, offset: 0 });
+      linkedStudentId = list.items[0]?.id ?? null;
+    }
+    return { ...base, name, parentId, linkedStudentId };
+  }
+
+  return { ...base, name };
 }
 
 export async function loginWithEmailPassword(email, password) {
@@ -72,7 +104,7 @@ export async function loginWithEmailPassword(email, password) {
   );
 
   return {
-    user: mapPublicUser(user),
+    user: await enrichPublicUser(user),
     accessToken,
     refreshToken,
   };

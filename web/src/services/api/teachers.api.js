@@ -1,25 +1,62 @@
 import { apiRequest } from "../httpClient.js";
+import { joinFullName, splitFullName, unwrapList } from "./mappers.js";
 
-function unwrapList(data) {
-  return data?.items ?? data?.rows ?? data ?? [];
+function mapApiTeacherToUi(row) {
+  if (!row) return row;
+  const firstName = row.first_name ?? row.firstName ?? "";
+  const lastName = row.last_name ?? row.lastName ?? "";
+  return {
+    id: row.id,
+    fullName: joinFullName(firstName, lastName) || row.fullName || "",
+    email: row.email ?? "",
+    branch: row.branch ?? "",
+    phone: row.phone ?? "",
+    active: Boolean(row.is_active ?? row.isActive ?? row.active ?? true)
+  };
+}
+
+function uiPayloadToApi(payload, { forUpdate = false } = {}) {
+  const { firstName, lastName } = splitFullName(payload.fullName);
+
+  if (!forUpdate && (!firstName || !payload.email || !payload.branch)) {
+    throw new Error("Ad, e-posta ve branş zorunludur.");
+  }
+
+  const body = {};
+  if (firstName) body.firstName = firstName;
+  if (lastName) body.lastName = lastName;
+  if (payload.email) body.email = payload.email;
+  if (payload.branch) body.branch = payload.branch;
+  if (payload.phone !== undefined) body.phone = payload.phone || null;
+  if (payload.active !== undefined) body.isActive = Boolean(payload.active);
+
+  return body;
 }
 
 export async function list({ onlyActive, q } = {}) {
   const params = new URLSearchParams();
-  if (onlyActive) params.set("isActive", "true");
   if (q) params.set("search", q);
   const data = await apiRequest(`/teachers?${params.toString()}`);
-  return unwrapList(data);
+  let rows = unwrapList(data).map(mapApiTeacherToUi);
+  if (onlyActive) rows = rows.filter((r) => r.active);
+  return rows;
 }
 
 export async function create(payload) {
-  return apiRequest("/teachers", { method: "POST", body: JSON.stringify(payload) });
+  const body = uiPayloadToApi(payload);
+  const row = await apiRequest("/teachers", { method: "POST", body: JSON.stringify(body) });
+  return mapApiTeacherToUi(row);
 }
 
 export async function update(id, payload) {
-  return apiRequest(`/teachers/${id}`, { method: "PATCH", body: JSON.stringify(payload) });
+  const body = uiPayloadToApi(payload, { forUpdate: true });
+  const row = await apiRequest(`/teachers/${id}`, { method: "PATCH", body: JSON.stringify(body) });
+  return mapApiTeacherToUi(row);
 }
 
 export async function remove(id) {
-  return apiRequest(`/teachers/${id}`, { method: "DELETE" });
+  await apiRequest(`/teachers/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ isActive: false })
+  });
 }

@@ -1,4 +1,4 @@
-import { findScheduleConflicts } from "../../utils/scheduleConflict.js";
+import { findScheduleConflicts, normalizeTimeInput } from "../../utils/scheduleConflict.js";
 import { createId, getStore } from "./state.js";
 
 export async function list({ day, q } = {}) {
@@ -16,12 +16,17 @@ export async function checkConflict(candidate, ignoreId) {
 }
 
 export async function create(payload) {
-  const check = await checkConflict(payload);
+  const normalized = {
+    ...payload,
+    startTime: normalizeTimeInput(payload.startTime),
+    endTime: normalizeTimeInput(payload.endTime)
+  };
+  const check = await checkConflict(normalized);
   if (!check.ok) {
     const msg = [...check.errors, ...check.conflicts.map((c) => c.message)].join("\n");
     throw new Error(msg);
   }
-  const row = { id: createId("sch"), ...payload };
+  const row = { id: createId("sch"), ...normalized };
   getStore().schedules.unshift(row);
   return row;
 }

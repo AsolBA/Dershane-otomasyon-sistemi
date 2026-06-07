@@ -10,7 +10,7 @@ export default function ExamResultsReadOnly({ title, subtitle }) {
   const reload = useCallback(async () => {
     setLoading(true);
     try {
-      const studentId = user?.role === ROLES.PARENT ? user?.linkedStudentId : user?.id;
+      const studentId = user?.role === ROLES.PARENT ? user?.linkedStudentId : user?.studentId;
       const data = await examsService.listExamsForStudent(studentId);
       setRows(data);
     } catch (err) {

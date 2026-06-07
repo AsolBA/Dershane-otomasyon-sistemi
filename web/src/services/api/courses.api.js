@@ -1,23 +1,42 @@
 import { apiRequest } from "../httpClient.js";
+import { unwrapList } from "./mappers.js";
 
-function unwrapList(data) {
-  return data?.items ?? data?.rows ?? data ?? [];
+function mapApiCourseToUi(row) {
+  if (!row) return row;
+  return {
+    id: row.id,
+    name: row.name ?? "",
+    code: row.code ?? "",
+    active: true
+  };
 }
 
 export async function list({ onlyActive, q } = {}) {
   const params = new URLSearchParams();
-  if (onlyActive) params.set("isActive", "true");
   if (q) params.set("search", q);
   const data = await apiRequest(`/courses?${params.toString()}`);
-  return unwrapList(data);
+  const rows = unwrapList(data).map(mapApiCourseToUi);
+  return onlyActive ? rows.filter((r) => r.active) : rows;
 }
 
 export async function create(payload) {
-  return apiRequest("/courses", { method: "POST", body: JSON.stringify(payload) });
+  const row = await apiRequest("/courses", {
+    method: "POST",
+    body: JSON.stringify({
+      name: payload.name,
+      code: payload.code,
+      description: payload.description ?? null
+    })
+  });
+  return mapApiCourseToUi(row);
 }
 
 export async function update(id, payload) {
-  return apiRequest(`/courses/${id}`, { method: "PATCH", body: JSON.stringify(payload) });
+  const body = {};
+  if (payload.name !== undefined) body.name = payload.name;
+  if (payload.code !== undefined) body.code = payload.code;
+  const row = await apiRequest(`/courses/${id}`, { method: "PATCH", body: JSON.stringify(body) });
+  return mapApiCourseToUi(row);
 }
 
 export async function remove(id) {

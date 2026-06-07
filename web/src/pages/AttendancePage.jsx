@@ -57,7 +57,7 @@ function AttendanceAdminPage() {
 
   const teacherNameById = useMemo(() => {
     const map = new Map();
-    for (const t of teachersRef) map.set(t.id, t.fullName);
+    for (const t of teachersRef) map.set(String(t.id), t.fullName);
     return map;
   }, [teachersRef]);
 
@@ -149,7 +149,7 @@ function AttendanceAdminPage() {
             <select className="input" value={scheduleId} onChange={(e) => setScheduleId(e.target.value)}>
               {scheduleOptions.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {formatDay(s.day)} {s.startTime}-{s.endTime} | {s.className} | {teacherNameById.get(s.teacherId) || s.teacherId}
+                  {formatDay(s.day)} {s.startTime}-{s.endTime} | {s.className} | {teacherNameById.get(String(s.teacherId)) || s.teacherId}
                 </option>
               ))}
             </select>
