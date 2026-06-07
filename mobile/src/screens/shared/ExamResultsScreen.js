@@ -10,17 +10,19 @@ export default function ExamResultsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  const studentId = user?.role === ROLES.PARENT ? user?.linkedStudentId : user?.studentId;
+
   const reload = useCallback(async () => {
     try {
       const data =
         user?.role === ROLES.PARENT
-          ? await examsService.listExamsForParent(user.linkedStudentId)
-          : await examsService.listExamsForStudent(user?.id);
+          ? await examsService.listExamsForParent(studentId)
+          : await examsService.listExamsForStudent(studentId);
       setRows(data);
     } catch (err) {
       alert(err?.message || "Sınavlar yüklenemedi.");
     }
-  }, [user]);
+  }, [user?.role, studentId]);
 
   useEffect(() => {
     (async () => {
@@ -39,7 +41,7 @@ export default function ExamResultsScreen() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -50,12 +52,16 @@ export default function ExamResultsScreen() {
       data={rows}
       keyExtractor={(item) => item.id}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      ListEmptyComponent={<Text style={commonStyles.empty}>Sınav kaydı yok.</Text>}
+      ListEmptyComponent={<Text style={commonStyles.empty}>Henüz sınav sonucu yok.</Text>}
       renderItem={({ item }) => (
         <View style={styles.card}>
           <Text style={styles.title}>{item.name}</Text>
-          <Text style={styles.muted}>{item.date}</Text>
-          <Text style={styles.score}>{item.score == null ? "Sonuç girilmedi" : `Puan: ${item.score}`}</Text>
+          <Text style={styles.muted}>
+            {item.date} {item.className ? `· ${item.className}` : ""}
+          </Text>
+          <Text style={styles.score}>
+            {item.score == null ? "Sonuç girilmedi" : `Puan: ${item.score}`}
+          </Text>
         </View>
       )}
     />
@@ -64,7 +70,7 @@ export default function ExamResultsScreen() {
 
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.bg },
-  list: { padding: spacing.md, gap: spacing.sm, backgroundColor: colors.bg },
+  list: { padding: spacing.md, backgroundColor: colors.bg },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.md,

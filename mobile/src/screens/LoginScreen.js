@@ -16,7 +16,7 @@ import { colors, radius, shadow, spacing } from "../theme";
 
 export default function LoginScreen() {
   const { login } = useAuth();
-  const [email, setEmail] = useState("student@dershane.local");
+  const [email, setEmail] = useState("mehmet.student@dershane.local");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState(ROLES.STUDENT);
   const [loading, setLoading] = useState(false);
@@ -58,7 +58,7 @@ export default function LoginScreen() {
             onChangeText={setEmail}
             autoCapitalize="none"
             keyboardType="email-address"
-            placeholder="ornek@dershane.local"
+            placeholder="mehmet.student@dershane.local"
             placeholderTextColor={colors.muted}
           />
 
