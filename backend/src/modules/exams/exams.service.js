@@ -200,3 +200,17 @@ export async function deleteResult(id) {
   const r = await query(`DELETE FROM exam_results WHERE id = $1 RETURNING id`, [id]);
   if (r.rowCount === 0) throw new AppError(404, "EXAM_RESULT_NOT_FOUND", "Sinav sonucu bulunamadi.");
 }
+
+export async function listExamResultsForStudent(studentId) {
+  const r = await query(
+    `
+    SELECT e.id, e.name, e.exam_date, e.class_id, e.course_id, er.score
+    FROM exams e
+    JOIN students s ON s.id = $1
+    LEFT JOIN exam_results er ON er.exam_id = e.id AND er.student_id = s.id
+    WHERE e.class_id = s.current_class_id OR e.class_id IS NULL
+    ORDER BY e.exam_date DESC, e.id DESC`,
+    [studentId],
+  );
+  return r.rows;
+}

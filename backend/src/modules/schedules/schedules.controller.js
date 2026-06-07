@@ -4,6 +4,7 @@ import { AppError } from "../../utils/app-error.js";
 import { parseId, parsePagination } from "../../utils/query-params.js";
 import * as svc from "./schedules.service.js";
 import * as teachersSvc from "../teachers/teachers.service.js";
+import * as studentsSvc from "../students/students.service.js";
 
 async function assertTeacherOwnsSchedule(req, scheduleRow) {
   if (!["teacher"].includes(req.user.role)) return;
@@ -33,6 +34,15 @@ export const list = asyncHandler(async (req, res) => {
   if (req.user.role === "teacher") {
     const tid = await teachersSvc.getTeacherIdByUserId(req.user.id);
     filters.teacherId = tid ?? -1;
+  }
+
+  if (req.user.role === "student") {
+    const sid = await studentsSvc.getStudentIdByUserId(req.user.id);
+    if (!sid) {
+      return sendSuccess(res, { items: [], total: 0, page, limit });
+    }
+    const st = await studentsSvc.getStudentById(sid);
+    filters.classId = st.current_class_id ?? -1;
   }
 
   const data = await svc.listSchedules(filters, { page, limit, offset });

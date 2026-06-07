@@ -10,7 +10,7 @@ export default function StudentScheduleReadOnly() {
   const [teachers, setTeachers] = useState([]);
   const [courses, setCourses] = useState([]);
 
-  const className = user?.className || "12-A";
+  const className = user?.className || "";
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -45,13 +45,13 @@ export default function StudentScheduleReadOnly() {
 
   const teacherNameById = useMemo(() => {
     const map = new Map();
-    for (const t of teachers) map.set(t.id, t.fullName);
+    for (const t of teachers) map.set(String(t.id), t.fullName);
     return map;
   }, [teachers]);
 
   const courseLabelById = useMemo(() => {
     const map = new Map();
-    for (const c of courses) map.set(c.id, c.name);
+    for (const c of courses) map.set(String(c.id), c.name);
     return map;
   }, [courses]);
 
@@ -108,8 +108,8 @@ export default function StudentScheduleReadOnly() {
                       <td>
                         {r.startTime} – {r.endTime}
                       </td>
-                      <td>{courseLabelById.get(r.courseId) || r.courseId}</td>
-                      <td className="muted">{teacherNameById.get(r.teacherId) || "—"}</td>
+                      <td>{courseLabelById.get(String(r.courseId)) || r.courseId}</td>
+                      <td className="muted">{teacherNameById.get(String(r.teacherId)) || "—"}</td>
                       <td>{r.room}</td>
                     </tr>
                   ))

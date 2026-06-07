@@ -4,7 +4,7 @@ import { coursesService, examsService, studentsService } from "../services";
 const emptyExam = {
   name: "",
   date: "",
-  courseId: "crs_1",
+  courseId: "",
   className: "12-A"
 };
 
@@ -21,6 +21,7 @@ export default function ExamAdminPage() {
   const [showExamForm, setShowExamForm] = useState(false);
 
   const [selectedExamId, setSelectedExamId] = useState("");
+  const [draftScores, setDraftScores] = useState({});
 
   const reloadExams = useCallback(async () => {
     setLoading(true);
@@ -58,18 +59,21 @@ export default function ExamAdminPage() {
       if (selectedExamId) setSelectedExamId("");
       return;
     }
-    if (!selectedExamId || !exams.some((e) => e.id === selectedExamId)) {
-      setSelectedExamId(exams[0].id);
+    if (!selectedExamId || !exams.some((e) => String(e.id) === String(selectedExamId))) {
+      setSelectedExamId(String(exams[0].id));
     }
   }, [exams, selectedExamId]);
 
   const courseLabelById = useMemo(() => {
     const map = new Map();
-    for (const c of courses) map.set(c.id, `${c.name} (${c.code})`);
+    for (const c of courses) map.set(String(c.id), `${c.name} (${c.code})`);
     return map;
   }, [courses]);
 
-  const selectedExam = useMemo(() => exams.find((e) => e.id === selectedExamId) || null, [exams, selectedExamId]);
+  const selectedExam = useMemo(
+    () => exams.find((e) => String(e.id) === String(selectedExamId)) || null,
+    [exams, selectedExamId]
+  );
 
   const studentsForSelected = useMemo(() => {
     if (!selectedExam) return [];
@@ -80,22 +84,35 @@ export default function ExamAdminPage() {
     if (!selectedExamId) return;
     examsService
       .listResults(selectedExamId)
-      .then(setResults)
-      .catch(() => setResults([]));
+      .then((rows) => {
+        setResults(rows);
+        const next = {};
+        for (const r of rows) {
+          next[String(r.studentId)] = r.score == null ? "" : String(r.score);
+        }
+        setDraftScores(next);
+      })
+      .catch(() => {
+        setResults([]);
+        setDraftScores({});
+      });
   }, [selectedExamId]);
 
   const scoreByStudentId = useMemo(() => {
     const map = new Map();
     if (!selectedExam) return map;
     for (const r of results) {
-      if (r.examId === selectedExam.id) map.set(r.studentId, r.score);
+      if (String(r.examId) === String(selectedExam.id)) map.set(String(r.studentId), r.score);
     }
     return map;
   }, [results, selectedExam]);
 
   function openCreateExam() {
     setEditingExamId(null);
-    setExamForm(emptyExam);
+    setExamForm({
+      ...emptyExam,
+      courseId: courses[0] ? String(courses[0].id) : ""
+    });
     setShowExamForm(true);
   }
 
@@ -134,7 +151,7 @@ export default function ExamAdminPage() {
         await examsService.updateExam(editingExamId, payload);
       } else {
         const created = await examsService.createExam(payload);
-        setSelectedExamId(created.id);
+        setSelectedExamId(String(created.id));
       }
       await reloadExams();
       closeExamForm();
@@ -155,14 +172,24 @@ export default function ExamAdminPage() {
     }
   }
 
-  async function setScore(studentId, raw) {
+  async function saveScore(studentId) {
     if (!selectedExam) return;
+    const raw = draftScores[String(studentId)] ?? "";
+    if (raw.trim() === "") return;
     const n = Number(String(raw).replace(",", "."));
-    const score = Number.isFinite(n) ? n : null;
+    if (!Number.isFinite(n)) {
+      alert("Geçerli bir puan girin.");
+      return;
+    }
     try {
-      await examsService.upsertResult(selectedExam.id, studentId, score);
+      await examsService.upsertResult(selectedExam.id, studentId, n);
       const next = await examsService.listResults(selectedExam.id);
       setResults(next);
+      const synced = {};
+      for (const r of next) {
+        synced[String(r.studentId)] = r.score == null ? "" : String(r.score);
+      }
+      setDraftScores(synced);
     } catch (err) {
       alert(err?.message || "Sonuç kaydı başarısız.");
     }
@@ -170,10 +197,16 @@ export default function ExamAdminPage() {
 
   const summary = useMemo(() => {
     if (!selectedExam) return { count: 0, avg: null };
-    const rows = results.filter((r) => r.examId === selectedExam.id);
-    if (!rows.length) return { count: 0, avg: null };
-    const sum = rows.reduce((acc, r) => acc + r.score, 0);
-    return { count: rows.length, avg: sum / rows.length };
+    const scored = results.filter(
+      (r) =>
+        String(r.examId) === String(selectedExam.id) &&
+        r.score != null &&
+        r.score !== "" &&
+        Number.isFinite(Number(r.score))
+    );
+    if (!scored.length) return { count: 0, avg: null };
+    const sum = scored.reduce((acc, r) => acc + Number(r.score), 0);
+    return { count: scored.length, avg: sum / scored.length };
   }, [results, selectedExam]);
 
   return (
@@ -216,11 +249,11 @@ export default function ExamAdminPage() {
                     <tr key={e.id}>
                       <td style={{ fontWeight: 600 }}>{e.name}</td>
                       <td>{e.date}</td>
-                      <td className="muted">{courseLabelById.get(e.courseId) || e.courseId}</td>
+                      <td className="muted">{courseLabelById.get(String(e.courseId)) || e.courseId}</td>
                       <td>{e.className}</td>
                       <td style={{ width: 240 }}>
                         <div className="row-actions">
-                          <button className="btn" type="button" onClick={() => setSelectedExamId(e.id)}>
+                          <button className="btn" type="button" onClick={() => setSelectedExamId(String(e.id))}>
                             Sonuçlar
                           </button>
                           <button className="btn" type="button" onClick={() => openEditExam(e)}>
@@ -275,7 +308,7 @@ export default function ExamAdminPage() {
               Ders
               <select className="input" value={examForm.courseId} onChange={(e) => setExamForm((p) => ({ ...p, courseId: e.target.value }))}>
                 {courses.map((c) => (
-                  <option key={c.id} value={c.id}>
+                  <option key={c.id} value={String(c.id)}>
                     {c.name} ({c.code})
                   </option>
                 ))}
@@ -302,7 +335,7 @@ export default function ExamAdminPage() {
           <div className="toolbar">
             <select className="input" value={selectedExamId} onChange={(e) => setSelectedExamId(e.target.value)} style={{ minWidth: 280 }}>
               {exams.map((e) => (
-                <option key={e.id} value={e.id}>
+                <option key={e.id} value={String(e.id)}>
                   {e.date} — {e.name} ({e.className})
                 </option>
               ))}
@@ -336,7 +369,8 @@ export default function ExamAdminPage() {
               ) : null}
 
               {studentsForSelected.map((s) => {
-                const v = scoreByStudentId.get(s.id);
+                const sid = String(s.id);
+                const v = draftScores[sid] ?? (scoreByStudentId.get(sid) == null ? "" : String(scoreByStudentId.get(sid)));
                 return (
                   <tr key={s.id}>
                     <td>
@@ -347,9 +381,13 @@ export default function ExamAdminPage() {
                       <input
                         className="input"
                         inputMode="decimal"
-                        value={v === undefined ? "" : String(v)}
-                        placeholder="Örn: 38.5"
-                        onChange={(e) => setScore(s.id, e.target.value)}
+                        value={v}
+                        placeholder="Örn: 85"
+                        onChange={(e) => setDraftScores((p) => ({ ...p, [sid]: e.target.value }))}
+                        onBlur={() => saveScore(s.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") saveScore(s.id);
+                        }}
                       />
                     </td>
                   </tr>

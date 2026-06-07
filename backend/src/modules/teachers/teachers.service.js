@@ -98,7 +98,13 @@ export async function updateTeacher(id, payload) {
   if (!t.rows[0]) throw new AppError(404, "TEACHER_NOT_FOUND", "Ogretmen bulunamadi.");
   const userId = t.rows[0].user_id;
 
-  if (payload.firstName || payload.lastName || payload.email || payload.phone !== undefined) {
+  if (
+    payload.firstName ||
+    payload.lastName ||
+    payload.email ||
+    payload.phone !== undefined ||
+    payload.isActive !== undefined
+  ) {
     const f = [];
     const pr = [];
     let i = 1;
@@ -117,6 +123,10 @@ export async function updateTeacher(id, payload) {
     if (payload.phone !== undefined) {
       f.push(`phone = $${i++}`);
       pr.push(payload.phone);
+    }
+    if (payload.isActive !== undefined) {
+      f.push(`is_active = $${i++}`);
+      pr.push(Boolean(payload.isActive));
     }
     pr.push(userId);
     try {

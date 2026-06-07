@@ -5,7 +5,7 @@ import * as ctrl from "./teachers.controller.js";
 
 const router = Router();
 const manage = authorize("admin", "manager");
-const readRoles = authorize("admin", "manager", "teacher");
+const readRoles = authorize("admin", "manager", "teacher", "student", "parent");
 
 router.get("/", authenticate, readRoles, ctrl.list);
 router.post("/", authenticate, manage, ctrl.create);

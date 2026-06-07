@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { teachersService } from "../services";
+import { TEACHER_BRANCHES } from "../utils/constants";
 
 const emptyForm = {
   fullName: "",
@@ -67,7 +68,7 @@ export default function TeachersPage() {
       active: Boolean(form.active)
     };
 
-    if (!payload.fullName || !payload.email || !payload.branch) {
+    if (!payload.fullName || !payload.email || !payload.branch || !TEACHER_BRANCHES.includes(payload.branch)) {
       alert("Ad, e-posta ve branş zorunludur.");
       return;
     }
@@ -199,7 +200,14 @@ export default function TeachersPage() {
             </label>
             <label>
               Branş
-              <input value={form.branch} onChange={(e) => setForm((p) => ({ ...p, branch: e.target.value }))} />
+              <select value={form.branch} onChange={(e) => setForm((p) => ({ ...p, branch: e.target.value }))}>
+                <option value="">Branş seçin</option>
+                {TEACHER_BRANCHES.map((b) => (
+                  <option key={b} value={b}>
+                    {b}
+                  </option>
+                ))}
+              </select>
             </label>
             <label>
               Telefon

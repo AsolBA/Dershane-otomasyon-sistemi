@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { studentsService } from "../services";
+import { classesService, studentsService } from "../services";
 
 const emptyForm = {
   fullName: "",
@@ -19,6 +19,7 @@ export default function StudentsPage() {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [showForm, setShowForm] = useState(false);
+  const [classes, setClasses] = useState([]);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -36,9 +37,19 @@ export default function StudentsPage() {
     reload();
   }, [reload]);
 
+  useEffect(() => {
+    classesService
+      .list({ onlyActive: true })
+      .then(setClasses)
+      .catch(() => setClasses([]));
+  }, []);
+
   function openCreate() {
     setEditingId(null);
-    setForm(emptyForm);
+    setForm({
+      ...emptyForm,
+      className: classes[0]?.name || ""
+    });
     setShowForm(true);
   }
 
@@ -206,7 +217,14 @@ export default function StudentsPage() {
             </label>
             <label>
               Sınıf
-              <input value={form.className} onChange={(e) => setForm((p) => ({ ...p, className: e.target.value }))} />
+              <select value={form.className} onChange={(e) => setForm((p) => ({ ...p, className: e.target.value }))}>
+                <option value="">Sınıf seçin</option>
+                {classes.map((c) => (
+                  <option key={c.id} value={c.name}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
             </label>
             <label>
               Veli adı

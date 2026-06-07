@@ -6,6 +6,32 @@ import * as svc from "./exams.service.js";
 import * as studentsSvc from "../students/students.service.js";
 
 
+export const listMyResults = asyncHandler(async (req, res) => {
+  let studentId;
+
+  if (req.user.role === "student") {
+    studentId = await studentsSvc.getStudentIdByUserId(req.user.id);
+    if (!studentId) {
+      return sendSuccess(res, { items: [], total: 0 });
+    }
+  } else if (req.user.role === "parent") {
+    studentId = req.query.studentId ? Number(req.query.studentId) : null;
+    if (!studentId) {
+      throw new AppError(400, "ATTENDANCE_STUDENT_REQUIRED", "Veli olarak studentId parametresi gerekli.");
+    }
+    const st = await studentsSvc.getStudentById(studentId);
+    const parentId = await studentsSvc.getParentIdByUserId(req.user.id);
+    if (Number(st.parent_id) !== Number(parentId)) {
+      throw new AppError(403, "AUTH_FORBIDDEN", "Bu ogrencinin sonuclarini goremezsiniz.");
+    }
+  } else {
+    throw new AppError(403, "AUTH_FORBIDDEN", "Bu endpoint sadece ogrenci ve veli icindir.");
+  }
+
+  const rows = await svc.listExamResultsForStudent(studentId);
+  return sendSuccess(res, { items: rows, total: rows.length });
+});
+
 export const listExams = asyncHandler(async (req, res) => {
   const { page, limit, offset } = parsePagination(req.query);
   const filters = {
