@@ -1,20 +1,66 @@
 import { apiRequest } from "../httpClient";
+import {
+  buildClassMaps,
+  dayNameToNumber,
+  dayNumberToName,
+  formatTime,
+  unwrapList
+} from "./mappers";
+import * as classesApi from "./classes.api";
+import * as teachersApi from "./teachers.api";
+import * as coursesApi from "./courses.api";
 
-function unwrapList(data) {
-  return data?.items ?? data?.rows ?? data ?? [];
+async function loadClassNameMap() {
+  const classes = await classesApi.list({});
+  return buildClassMaps(classes).idToName;
+}
+
+function mapApiScheduleToUi(row, idToName, teacherNameById, courseNameById) {
+  if (!row) return row;
+  const classId = Number(row.class_id ?? row.classId);
+  const teacherId = row.teacher_id ?? row.teacherId;
+  const courseId = row.course_id ?? row.courseId;
+  return {
+    id: String(row.id),
+    day: dayNumberToName(row.day_of_week ?? row.dayOfWeek ?? row.day),
+    startTime: formatTime(row.start_time ?? row.startTime),
+    endTime: formatTime(row.end_time ?? row.endTime),
+    className: idToName.get(classId) ?? row.className ?? "",
+    teacherId: teacherId != null ? String(teacherId) : "",
+    teacherName: teacherNameById.get(String(teacherId)) ?? "",
+    courseId: courseId != null ? String(courseId) : "",
+    courseName: courseNameById.get(String(courseId)) ?? row.courseName ?? "Ders",
+    room: row.room ?? ""
+  };
+}
+
+async function loadTeacherAndCourseMaps() {
+  const [teachers, courses] = await Promise.all([
+    teachersApi.list({ onlyActive: true }),
+    coursesApi.list({ onlyActive: true })
+  ]);
+  const teacherNameById = new Map();
+  for (const t of teachers) teacherNameById.set(String(t.id), t.fullName);
+  const courseNameById = new Map();
+  for (const c of courses) courseNameById.set(String(c.id), c.name);
+  return { teacherNameById, courseNameById };
+}
+
+export async function list({ day } = {}) {
+  const params = new URLSearchParams();
+  if (day && day !== "ALL") params.set("dayOfWeek", String(dayNameToNumber(day)));
+  const [data, idToName, maps] = await Promise.all([
+    apiRequest(`/schedules?${params.toString()}`),
+    loadClassNameMap(),
+    loadTeacherAndCourseMaps()
+  ]);
+  return unwrapList(data).map((row) =>
+    mapApiScheduleToUi(row, idToName, maps.teacherNameById, maps.courseNameById)
+  );
 }
 
 export async function listForClass(className) {
-  const params = new URLSearchParams();
-  if (className) params.set("className", className);
-  const data = await apiRequest(`/schedules?${params.toString()}`);
-  return unwrapList(data).map((s) => ({
-    id: String(s.id),
-    day: s.day,
-    startTime: s.startTime,
-    endTime: s.endTime,
-    className: s.className,
-    courseName: s.courseName || s.course?.name || "Ders",
-    room: s.room
-  }));
+  const rows = await list({});
+  if (!className) return rows;
+  return rows.filter((r) => r.className === className);
 }

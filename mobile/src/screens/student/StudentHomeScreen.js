@@ -16,8 +16,8 @@ export default function StudentHomeScreen() {
   const reload = useCallback(async () => {
     try {
       const [exams, schedule, notifications] = await Promise.all([
-        examsService.listExamsForStudent(user?.id),
-        schedulesService.listForClass(user?.className || "12-A"),
+        examsService.listExamsForStudent(user?.studentId),
+        schedulesService.listForClass(user?.className || ""),
         notificationsService.list()
       ]);
       setStats({

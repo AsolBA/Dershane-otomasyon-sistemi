@@ -13,7 +13,9 @@ export default function ScheduleScreen() {
 
   const reload = useCallback(async () => {
     try {
-      const data = await schedulesService.listForClass(user?.className || "12-A");
+      const data = user?.className
+        ? await schedulesService.listForClass(user.className)
+        : await schedulesService.list({});
       setRows(data);
     } catch (err) {
       alert(err?.message || "Program yüklenemedi.");
@@ -37,7 +39,7 @@ export default function ScheduleScreen() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -48,15 +50,22 @@ export default function ScheduleScreen() {
       data={rows}
       keyExtractor={(item) => item.id}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      ListHeaderComponent={
+        user?.className ? (
+          <Text style={styles.header}>
+            <Text style={styles.headerStrong}>{user.className}</Text> sınıfı programı
+          </Text>
+        ) : null
+      }
       ListEmptyComponent={<Text style={commonStyles.empty}>Program kaydı yok.</Text>}
       renderItem={({ item }) => (
         <View style={styles.card}>
           <Text style={styles.title}>
-            {formatDay(item.day)} {item.startTime}–{item.endTime}
+            {formatDay(item.day)} · {item.startTime}–{item.endTime}
           </Text>
-          <Text style={styles.muted}>
-            {item.courseName} — {item.room}
-          </Text>
+          <Text style={styles.line}>{item.courseName}</Text>
+          <Text style={styles.muted}>Öğretmen: {item.teacherName || "—"}</Text>
+          <Text style={styles.muted}>Derslik: {item.room || "—"}</Text>
         </View>
       )}
     />
@@ -66,6 +75,8 @@ export default function ScheduleScreen() {
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.bg },
   list: { padding: spacing.md, backgroundColor: colors.bg },
+  header: { marginBottom: spacing.md, color: colors.muted, fontSize: 14 },
+  headerStrong: { fontWeight: "700", color: colors.text },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.md,
@@ -76,5 +87,6 @@ const styles = StyleSheet.create({
     ...shadow.card
   },
   title: { fontSize: 16, fontWeight: "700", color: colors.text },
-  muted: { marginTop: 4, color: colors.muted }
+  line: { marginTop: 6, fontSize: 15, color: colors.text },
+  muted: { marginTop: 4, color: colors.muted, fontSize: 14 }
 });

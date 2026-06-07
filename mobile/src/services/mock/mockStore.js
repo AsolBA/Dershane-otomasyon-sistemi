@@ -21,6 +21,7 @@ export const initialSchedules = [
     endTime: "10:00",
     className: "12-A",
     courseName: "Matematik",
+    teacherName: "Ayşe Yılmaz",
     room: "A-101"
   },
   {
@@ -30,7 +31,8 @@ export const initialSchedules = [
     endTime: "11:00",
     className: "12-A",
     courseName: "Fizik",
-    room: "A-101"
+    teacherName: "Ayşe Yılmaz",
+    room: "B-201"
   }
 ];
 
