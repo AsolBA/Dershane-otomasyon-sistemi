@@ -6,6 +6,8 @@ import * as authApi from "./api/auth.api.js";
 import * as studentsMock from "./mock/students.mock.js";
 import * as studentsApi from "./api/students.api.js";
 
+import * as parentsApi from "./api/parents.api.js";
+
 import * as teachersMock from "./mock/teachers.mock.js";
 import * as teachersApi from "./api/teachers.api.js";
 
@@ -36,6 +38,7 @@ function pick(mock, api) {
 
 export const authService = pick(authMock, authApi);
 export const studentsService = pick(studentsMock, studentsApi);
+export const parentsService = USE_MOCK_API ? { list: async () => [] } : parentsApi;
 export const teachersService = pick(teachersMock, teachersApi);
 export const classesService = pick(classesMock, classesApi);
 export const coursesService = pick(coursesMock, coursesApi);

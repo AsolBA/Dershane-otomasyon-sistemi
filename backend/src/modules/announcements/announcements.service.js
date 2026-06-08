@@ -1,5 +1,6 @@
 import { query } from "../../db.js";
 import { AppError } from "../../utils/app-error.js";
+import * as notificationsSvc from "../notifications/notifications.service.js";
 
 export async function listAnnouncements(filters, pagination) {
   const parts = ["1=1"];
@@ -77,6 +78,42 @@ export async function getAnnouncementById(id) {
   return r.rows[0];
 }
 
+async function notifyUsersForAnnouncement(announcement) {
+  let userRows = [];
+
+  if (announcement.class_id) {
+    const scoped = await query(
+      `
+      SELECT DISTINCT u.id
+      FROM users u
+      JOIN students s ON s.user_id = u.id
+      WHERE s.current_class_id = $1 AND s.is_active = true
+      UNION
+      SELECT DISTINCT pu.id
+      FROM parents p
+      JOIN users pu ON pu.id = p.user_id
+      JOIN students s ON s.parent_id = p.id
+      WHERE s.current_class_id = $1 AND s.is_active = true`,
+      [announcement.class_id],
+    );
+    userRows = scoped.rows;
+  } else {
+    const all = await query(`SELECT id FROM users WHERE is_active = true`);
+    userRows = all.rows;
+  }
+
+  const message = announcement.title;
+  for (const row of userRows) {
+    await notificationsSvc.createNotification({
+      userId: row.id,
+      announcementId: announcement.id,
+      title: "Yeni duyuru",
+      message,
+      isRead: false,
+    });
+  }
+}
+
 export async function createAnnouncement(payload) {
   let targetRoleId = payload.targetRoleId ?? null;
   if (payload.targetRoleName) {
@@ -91,7 +128,9 @@ export async function createAnnouncement(payload) {
     RETURNING *`,
     [payload.title, payload.content, targetRoleId, payload.classId ?? null, payload.createdBy],
   );
-  return inserted.rows[0];
+  const announcement = inserted.rows[0];
+  await notifyUsersForAnnouncement(announcement);
+  return announcement;
 }
 
 export async function updateAnnouncement(id, payload) {

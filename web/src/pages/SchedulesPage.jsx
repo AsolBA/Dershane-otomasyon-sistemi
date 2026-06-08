@@ -4,7 +4,8 @@ import StudentScheduleReadOnly from "../components/StudentScheduleReadOnly";
 import { classesService, coursesService, schedulesService, teachersService } from "../services";
 import { findScheduleConflicts, normalizeTimeInput } from "../utils/scheduleConflict";
 import { formatDay } from "../utils/labels";
-import { CLASSROOMS, TEACHER_BRANCHES } from "../utils/constants";
+import { CLASSROOMS } from "../utils/constants";
+import { mergeTeacherBranches } from "../utils/branches";
 
 const emptyForm = {
   day: "Monday",
@@ -71,6 +72,11 @@ function ScheduleAdminPage() {
     loadRefs().catch(() => {});
   }, [loadRefs]);
 
+  const branchOptions = useMemo(
+    () => mergeTeacherBranches({ courses, teachers }),
+    [courses, teachers]
+  );
+
   const filteredTeachers = useMemo(() => {
     if (!form.branch) return teachers;
     return teachers.filter((t) => t.branch === form.branch);
@@ -102,7 +108,7 @@ function ScheduleAdminPage() {
   async function openCreate() {
     setEditingId(null);
     const refs = await loadRefs().catch(() => ({ teachers, courses, classes }));
-    const defaultBranch = TEACHER_BRANCHES[0];
+    const defaultBranch = mergeTeacherBranches({ courses: refs.courses || courses, teachers: refs.teachers || teachers })[0] || "";
     const branchTeachers = (refs.teachers || teachers).filter((t) => t.branch === defaultBranch);
     const classList = refs.classes || classes;
     setForm({
@@ -341,7 +347,7 @@ function ScheduleAdminPage() {
               Branş
               <select value={form.branch} onChange={(e) => onBranchChange(e.target.value)}>
                 <option value="">Branş seçin</option>
-                {TEACHER_BRANCHES.map((b) => (
+                {branchOptions.map((b) => (
                   <option key={b} value={b}>
                     {b}
                   </option>

@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { classesService, studentsService } from "../services";
+import { classesService, parentsService, studentsService } from "../services";
 
 const emptyForm = {
   fullName: "",
   email: "",
   className: "",
-  parentName: "",
-  parentPhone: "",
+  parentId: "",
   active: true
 };
 
@@ -20,6 +19,7 @@ export default function StudentsPage() {
   const [form, setForm] = useState(emptyForm);
   const [showForm, setShowForm] = useState(false);
   const [classes, setClasses] = useState([]);
+  const [parents, setParents] = useState([]);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -42,6 +42,10 @@ export default function StudentsPage() {
       .list({ onlyActive: true })
       .then(setClasses)
       .catch(() => setClasses([]));
+    parentsService
+      .list()
+      .then(setParents)
+      .catch(() => setParents([]));
   }, []);
 
   function openCreate() {
@@ -59,8 +63,7 @@ export default function StudentsPage() {
       fullName: row.fullName,
       email: row.email,
       className: row.className,
-      parentName: row.parentName,
-      parentPhone: row.parentPhone,
+      parentId: row.parentId != null && row.parentId !== "" ? String(row.parentId) : "",
       active: Boolean(row.active)
     });
     setShowForm(true);
@@ -77,8 +80,7 @@ export default function StudentsPage() {
       fullName: form.fullName.trim(),
       email: form.email.trim(),
       className: form.className.trim(),
-      parentName: form.parentName.trim(),
-      parentPhone: form.parentPhone.trim(),
+      parentId: form.parentId,
       active: Boolean(form.active)
     };
 
@@ -227,12 +229,15 @@ export default function StudentsPage() {
               </select>
             </label>
             <label>
-              Veli adı
-              <input value={form.parentName} onChange={(e) => setForm((p) => ({ ...p, parentName: e.target.value }))} />
-            </label>
-            <label>
-              Veli telefon
-              <input value={form.parentPhone} onChange={(e) => setForm((p) => ({ ...p, parentPhone: e.target.value }))} />
+              Veli
+              <select value={form.parentId} onChange={(e) => setForm((p) => ({ ...p, parentId: e.target.value }))}>
+                <option value="">Veli seçilmedi</option>
+                {parents.map((p) => (
+                  <option key={p.id} value={String(p.id)}>
+                    {p.fullName} {p.phone ? `(${p.phone})` : ""}
+                  </option>
+                ))}
+              </select>
             </label>
             <label>
               Durum

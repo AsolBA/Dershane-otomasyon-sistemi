@@ -18,7 +18,7 @@ const API_TO_UI_STATUS = {
 function mapApiAttendanceRow(row) {
   const status = row.status ?? row.attendance_status;
   return {
-    studentId: row.student_id ?? row.studentId,
+    studentId: String(row.student_id ?? row.studentId),
     status: API_TO_UI_STATUS[status] ?? String(status || "PRESENT").toUpperCase()
   };
 }

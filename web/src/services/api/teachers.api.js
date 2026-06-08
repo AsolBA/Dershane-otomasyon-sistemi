@@ -1,5 +1,6 @@
 import { apiRequest } from "../httpClient.js";
 import { joinFullName, splitFullName, unwrapList } from "./mappers.js";
+import { isValidLoginEmail, normalizeEmail } from "../../utils/email.js";
 
 function mapApiTeacherToUi(row) {
   if (!row) return row;
@@ -22,10 +23,15 @@ function uiPayloadToApi(payload, { forUpdate = false } = {}) {
     throw new Error("Ad, e-posta ve branş zorunludur.");
   }
 
+  const email = normalizeEmail(payload.email);
+  if (payload.email && !isValidLoginEmail(email)) {
+    throw new Error("E-posta adresinde Türkçe veya özel karakter kullanılamaz. Giriş için ASCII karakterler kullanın.");
+  }
+
   const body = {};
   if (firstName) body.firstName = firstName;
   if (lastName) body.lastName = lastName;
-  if (payload.email) body.email = payload.email;
+  if (payload.email) body.email = email;
   if (payload.branch) body.branch = payload.branch;
   if (payload.phone !== undefined) body.phone = payload.phone || null;
   if (payload.active !== undefined) body.isActive = Boolean(payload.active);

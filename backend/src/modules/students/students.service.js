@@ -67,10 +67,13 @@ export async function listStudents(filters, pagination) {
   const listSql = `
     SELECT s.id, s.student_no, s.enrollment_date, s.is_active, s.current_class_id, s.parent_id,
            u.id AS user_id, u.first_name, u.last_name, u.email, u.phone,
-           r.name AS role_name
+           r.name AS role_name,
+           pu.first_name AS parent_first_name, pu.last_name AS parent_last_name, pu.phone AS parent_phone
     FROM students s
     JOIN users u ON u.id = s.user_id
     JOIN roles r ON r.id = u.role_id
+    LEFT JOIN parents p ON p.id = s.parent_id
+    LEFT JOIN users pu ON pu.id = p.user_id
     WHERE ${whereClause}
     ORDER BY s.id ASC
     LIMIT $${p++} OFFSET $${p++}`;
@@ -89,9 +92,12 @@ export async function getStudentById(id) {
   const result = await query(
     `
     SELECT s.id, s.student_no, s.enrollment_date, s.is_active, s.current_class_id, s.parent_id,
-           u.id AS user_id, u.first_name, u.last_name, u.email, u.phone
+           u.id AS user_id, u.first_name, u.last_name, u.email, u.phone,
+           pu.first_name AS parent_first_name, pu.last_name AS parent_last_name, pu.phone AS parent_phone
     FROM students s
     JOIN users u ON u.id = s.user_id
+    LEFT JOIN parents p ON p.id = s.parent_id
+    LEFT JOIN users pu ON pu.id = p.user_id
     WHERE s.id = $1`,
     [id],
   );

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
-import { useAuth } from "../../auth/AuthContext";
+import { ROLES, useAuth } from "../../auth/AuthContext";
 import { schedulesService } from "../../services";
 import { formatDay } from "../../utils/labels";
 import { colors, commonStyles, radius, shadow, spacing } from "../../theme";
@@ -13,14 +13,17 @@ export default function ScheduleScreen() {
 
   const reload = useCallback(async () => {
     try {
-      const data = user?.className
-        ? await schedulesService.listForClass(user.className)
-        : await schedulesService.list({});
+      const data =
+        user?.role === ROLES.STUDENT
+          ? await schedulesService.list({})
+          : user?.className
+            ? await schedulesService.listForClass(user.className)
+            : await schedulesService.list({});
       setRows(data);
     } catch (err) {
       alert(err?.message || "Program yüklenemedi.");
     }
-  }, [user?.className]);
+  }, [user?.role, user?.className]);
 
   useEffect(() => {
     (async () => {
@@ -51,9 +54,9 @@ export default function ScheduleScreen() {
       keyExtractor={(item) => item.id}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       ListHeaderComponent={
-        user?.className ? (
+        user?.className || rows[0]?.className ? (
           <Text style={styles.header}>
-            <Text style={styles.headerStrong}>{user.className}</Text> sınıfı programı
+            <Text style={styles.headerStrong}>{user?.className || rows[0]?.className}</Text> sınıfı programı
           </Text>
         ) : null
       }

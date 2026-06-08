@@ -53,15 +53,23 @@ async function uiPayloadToApi(payload) {
   };
 }
 
+function filterSchedules(rows, q) {
+  const term = String(q || "").trim().toLowerCase();
+  if (!term) return rows;
+  return rows.filter((r) =>
+    `${r.day} ${r.startTime} ${r.endTime} ${r.className} ${r.room}`.toLowerCase().includes(term)
+  );
+}
+
 export async function list({ day, q } = {}) {
   const params = new URLSearchParams();
   if (day && day !== "ALL") params.set("dayOfWeek", String(dayNameToNumber(day)));
-  if (q) params.set("search", q);
   const [data, idToName] = await Promise.all([
     apiRequest(`/schedules?${params.toString()}`),
     loadClassNameMap()
   ]);
-  return unwrapList(data).map((row) => mapApiScheduleToUi(row, idToName));
+  const rows = unwrapList(data).map((row) => mapApiScheduleToUi(row, idToName));
+  return filterSchedules(rows, q);
 }
 
 export async function checkConflict(candidate, ignoreId) {

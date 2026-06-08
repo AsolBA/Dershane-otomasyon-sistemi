@@ -31,11 +31,23 @@ function navItemsForRole(role) {
   }
 
   if (role === ROLES.STUDENT) {
-    return [...base, { to: "/schedules", label: "Programım" }, { to: "/exams", label: "Sonuçlarım" }];
+    return [
+      ...base,
+      { to: "/schedules", label: "Programım" },
+      { to: "/exams", label: "Sonuçlarım" },
+      { to: "/announcements", label: "Duyurular" },
+      { to: "/notifications", label: "Bildirimler" }
+    ];
   }
 
   if (role === ROLES.PARENT) {
-    return [...base, { to: "/attendance", label: "Devamsızlık" }, { to: "/exams", label: "Sonuçlar" }];
+    return [
+      ...base,
+      { to: "/attendance", label: "Devamsızlık" },
+      { to: "/exams", label: "Sonuçlar" },
+      { to: "/announcements", label: "Duyurular" },
+      { to: "/notifications", label: "Bildirimler" }
+    ];
   }
 
   return base;

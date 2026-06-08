@@ -1,5 +1,5 @@
 import { apiRequest } from "../httpClient";
-import { writeStoredSession } from "../../auth/storage";
+import { readStoredSession, writeStoredSession } from "../../auth/storage";
 import { joinFullName } from "./mappers";
 import { apiRoleToUi } from "../roleMap";
 
@@ -38,8 +38,14 @@ export async function login({ email, password }) {
 }
 
 export async function logout() {
+  const session = await readStoredSession();
   try {
-    await apiRequest("/auth/logout", { method: "POST", body: "{}" });
+    if (session.refreshToken) {
+      await apiRequest("/auth/logout", {
+        method: "POST",
+        body: JSON.stringify({ refreshToken: session.refreshToken })
+      });
+    }
   } catch {
     /* ignore */
   }

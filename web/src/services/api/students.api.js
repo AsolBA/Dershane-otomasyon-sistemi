@@ -1,5 +1,6 @@
 import { apiRequest } from "../httpClient.js";
 import * as classesApi from "./classes.api.js";
+import { joinFullName } from "./mappers.js";
 
 function unwrapList(data) {
   return data?.items ?? data?.rows ?? data ?? [];
@@ -35,12 +36,18 @@ function mapApiStudentToUi(row, classNameById) {
   const firstName = row.first_name ?? row.firstName ?? "";
   const lastName = row.last_name ?? row.lastName ?? "";
   const classId = row.current_class_id ?? row.currentClassId;
+  const parentFirst = row.parent_first_name ?? "";
+  const parentLast = row.parent_last_name ?? "";
   return {
     id: row.id,
     fullName: [firstName, lastName].filter((p) => p && p !== "-").join(" ").trim() || firstName || lastName,
     email: row.email ?? "",
     className: classId != null ? classNameById.get(Number(classId)) ?? "" : "",
-    parentName: row.parent_name ?? row.parentName ?? "",
+    parentId: row.parent_id ?? row.parentId ?? "",
+    parentName:
+      row.parent_name ??
+      row.parentName ??
+      (joinFullName(parentFirst, parentLast) || ""),
     parentPhone: row.parent_phone ?? row.parentPhone ?? "",
     active: Boolean(row.is_active ?? row.isActive ?? row.active),
     studentNo: row.student_no ?? row.studentNo ?? ""
@@ -83,6 +90,10 @@ async function uiPayloadToApi(payload, { forUpdate = false } = {}) {
   }
   if (classId != null) body.currentClassId = classId;
   if (payload.active !== undefined) body.isActive = Boolean(payload.active);
+  if (payload.parentId !== undefined) {
+    const raw = String(payload.parentId ?? "").trim();
+    body.parentId = raw ? Number(raw) : null;
+  }
 
   return body;
 }
@@ -119,5 +130,8 @@ export async function update(id, payload) {
 }
 
 export async function remove(id) {
-  return apiRequest(`/students/${id}`, { method: "DELETE" });
+  return apiRequest(`/students/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ isActive: false })
+  });
 }

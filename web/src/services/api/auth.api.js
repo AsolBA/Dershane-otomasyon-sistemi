@@ -32,8 +32,14 @@ export async function login({ email, password }) {
 }
 
 export async function logout() {
+  const session = readStoredSession();
   try {
-    await apiRequest("/auth/logout", { method: "POST", body: "{}" });
+    if (session.refreshToken) {
+      await apiRequest("/auth/logout", {
+        method: "POST",
+        body: JSON.stringify({ refreshToken: session.refreshToken })
+      });
+    }
   } finally {
     clearStoredSession();
   }

@@ -63,14 +63,16 @@ export async function listExamsForStudent(studentId) {
   return unwrapList(data).map((row) => mapMyResultRow(row, classNameById));
 }
 
+function filterExams(rows, q) {
+  const term = String(q || "").trim().toLowerCase();
+  if (!term) return rows;
+  return rows.filter((r) => `${r.name} ${r.className} ${r.date}`.toLowerCase().includes(term));
+}
+
 export async function listExams({ q } = {}) {
-  const params = new URLSearchParams();
-  if (q) params.set("search", q);
-  const [data, classNameById] = await Promise.all([
-    apiRequest(`/exams?${params.toString()}`),
-    loadClassNameMap()
-  ]);
-  return unwrapList(data).map((row) => mapApiExamToUi(row, classNameById));
+  const [data, classNameById] = await Promise.all([apiRequest("/exams"), loadClassNameMap()]);
+  const rows = unwrapList(data).map((row) => mapApiExamToUi(row, classNameById));
+  return filterExams(rows, q);
 }
 
 export async function createExam(payload) {

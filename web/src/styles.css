@@ -105,12 +105,17 @@ a {
 }
 
 .nav-link {
-  display: block;
+  display: flex;
+  align-items: center;
+  min-height: 40px;
   padding: 10px 12px;
   border-radius: 10px;
   color: var(--sidebar-text);
   text-decoration: none;
   font-size: 14px;
+  font-weight: 500;
+  line-height: 1.25;
+  box-sizing: border-box;
   transition: background 0.15s, color 0.15s;
 }
 
@@ -122,7 +127,6 @@ a {
 .nav-link.active {
   background: rgba(37, 99, 235, 0.25);
   color: #fff;
-  font-weight: 600;
 }
 
 .content {
