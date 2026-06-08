@@ -1,12 +1,20 @@
 import { apiRequest } from "../httpClient.js";
+import { unwrapList } from "./mappers.js";
 
-function unwrapList(data) {
-  return data?.items ?? data?.rows ?? data ?? [];
+function mapApiNotificationToUi(row) {
+  if (!row) return row;
+  return {
+    id: row.id,
+    title: row.title ?? "",
+    body: row.message ?? row.body ?? "",
+    read: Boolean(row.is_read ?? row.read ?? false),
+    createdAt: row.created_at ?? row.createdAt ?? new Date().toISOString()
+  };
 }
 
 export async function list() {
   const data = await apiRequest("/notifications/me");
-  return unwrapList(data);
+  return unwrapList(data).map(mapApiNotificationToUi);
 }
 
 export async function markRead(id) {

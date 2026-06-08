@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
+import { ROLES, useAuth } from "../auth/AuthContext";
 import { announcementsService, classesService } from "../services";
+
+const MANAGE_ROLES = [ROLES.ADMIN, ROLES.DIRECTOR, ROLES.TEACHER];
 
 const emptyForm = {
   title: "",
@@ -9,6 +12,8 @@ const emptyForm = {
 };
 
 export default function AnnouncementsPage() {
+  const { user } = useAuth();
+  const canManage = MANAGE_ROLES.includes(user?.role);
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [classOptions, setClassOptions] = useState([]);
@@ -84,17 +89,23 @@ export default function AnnouncementsPage() {
       <div className="page-header">
         <div>
           <h1>Duyurular</h1>
-          <p className="muted">Duyuru oluşturma ve listeleme. Yeni duyuru bildirim merkezine düşer.</p>
+          <p className="muted">
+            {canManage
+              ? "Duyuru oluşturma ve listeleme. Yeni duyuru bildirim merkezine düşer."
+              : "Size özel duyurular (salt okunur)."}
+          </p>
         </div>
         <div className="toolbar">
           <input className="input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Ara..." />
-          <button className="btn btn-primary" type="button" onClick={openCreate}>
-            Yeni duyuru
-          </button>
+          {canManage ? (
+            <button className="btn btn-primary" type="button" onClick={openCreate}>
+              Yeni duyuru
+            </button>
+          ) : null}
         </div>
       </div>
 
-      {showForm ? (
+      {canManage && showForm ? (
         <div className="card" style={{ marginBottom: 14 }}>
           <div className="page-header" style={{ marginBottom: 10 }}>
             <div>
@@ -195,9 +206,11 @@ export default function AnnouncementsPage() {
                   </td>
                   <td className="muted">{new Date(r.createdAt).toLocaleString()}</td>
                   <td style={{ width: 120 }}>
-                    <button className="btn btn-danger" type="button" onClick={() => remove(r.id)}>
-                      Sil
-                    </button>
+                    {canManage ? (
+                      <button className="btn btn-danger" type="button" onClick={() => remove(r.id)}>
+                        Sil
+                      </button>
+                    ) : null}
                   </td>
                 </tr>
                   ))

@@ -33,6 +33,9 @@ export default function App() {
             <Route path="/teachers" element={<TeachersPage />} />
             <Route path="/classes" element={<ClassesPage />} />
             <Route path="/courses" element={<CoursesPage />} />
+          </Route>
+
+          <Route element={<RoleGate allow={[ROLES.ADMIN, ROLES.DIRECTOR, ROLES.STUDENT, ROLES.PARENT]} />}>
             <Route path="/notifications" element={<NotificationsPage />} />
           </Route>
 
@@ -44,7 +47,11 @@ export default function App() {
             <Route path="/attendance" element={<AttendancePage />} />
           </Route>
 
-          <Route element={<RoleGate allow={[ROLES.ADMIN, ROLES.DIRECTOR, ROLES.TEACHER]} />}>
+          <Route
+            element={
+              <RoleGate allow={[ROLES.ADMIN, ROLES.DIRECTOR, ROLES.TEACHER, ROLES.STUDENT, ROLES.PARENT]} />
+            }
+          >
             <Route path="/announcements" element={<AnnouncementsPage />} />
           </Route>
 

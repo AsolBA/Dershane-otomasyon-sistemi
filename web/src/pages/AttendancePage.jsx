@@ -48,7 +48,7 @@ function AttendanceAdminPage() {
         setSchedules(sch);
         setAllStudents(stu);
         setTeachersRef(tch);
-        if (sch[0]?.id) setScheduleId(sch[0].id);
+        if (sch[0]?.id != null) setScheduleId(String(sch[0].id));
       } catch (err) {
         alert(err?.message || "Veri yüklenemedi.");
       }
@@ -61,7 +61,10 @@ function AttendanceAdminPage() {
     return map;
   }, [teachersRef]);
 
-  const schedule = useMemo(() => schedules.find((s) => s.id === scheduleId) || null, [schedules, scheduleId]);
+  const schedule = useMemo(
+    () => schedules.find((s) => String(s.id) === String(scheduleId)) || null,
+    [schedules, scheduleId]
+  );
 
   const studentsForClass = useMemo(() => {
     if (!schedule) return [];
@@ -74,14 +77,13 @@ function AttendanceAdminPage() {
       return;
     }
     const existing = await attendanceService.getAttendance(schedule.id, date);
-    if (existing && existing.length) {
-      setRows(existing);
-      return;
-    }
+    const byStudentId = new Map(
+      (existing || []).map((r) => [String(r.studentId), r.status || "PRESENT"])
+    );
     setRows(
       studentsForClass.map((s) => ({
-        studentId: s.id,
-        status: "PRESENT"
+        studentId: String(s.id),
+        status: byStudentId.get(String(s.id)) || "PRESENT"
       }))
     );
   }, [schedule, date, studentsForClass]);
@@ -91,7 +93,8 @@ function AttendanceAdminPage() {
   }, [loadAttendance]);
 
   function setStatus(studentId, status) {
-    setRows((prev) => prev.map((r) => (r.studentId === studentId ? { ...r, status } : r)));
+    const sid = String(studentId);
+    setRows((prev) => prev.map((r) => (String(r.studentId) === sid ? { ...r, status } : r)));
   }
 
   function markAll(status) {
@@ -148,7 +151,7 @@ function AttendanceAdminPage() {
             Program satırı
             <select className="input" value={scheduleId} onChange={(e) => setScheduleId(e.target.value)}>
               {scheduleOptions.map((s) => (
-                <option key={s.id} value={s.id}>
+                <option key={s.id} value={String(s.id)}>
                   {formatDay(s.day)} {s.startTime}-{s.endTime} | {s.className} | {teacherNameById.get(String(s.teacherId)) || s.teacherId}
                 </option>
               ))}
@@ -197,7 +200,7 @@ function AttendanceAdminPage() {
               ) : null}
 
               {studentsForClass.map((stu) => {
-                const row = rows.find((r) => r.studentId === stu.id);
+                const row = rows.find((r) => String(r.studentId) === String(stu.id));
                 const status = row?.status || "PRESENT";
                 return (
                   <tr key={stu.id}>
@@ -206,7 +209,11 @@ function AttendanceAdminPage() {
                       <div className="muted">{stu.email}</div>
                     </td>
                     <td style={{ width: 260 }}>
-                      <select className="input" value={status} onChange={(e) => setStatus(stu.id, e.target.value)}>
+                      <select
+                        className="input"
+                        value={status}
+                        onChange={(e) => setStatus(String(stu.id), e.target.value)}
+                      >
                         {STATUSES.map((s) => (
                           <option key={s.value} value={s.value}>
                             {s.label}

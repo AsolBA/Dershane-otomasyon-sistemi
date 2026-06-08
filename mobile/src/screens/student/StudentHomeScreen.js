@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-nati
 import StatCard from "../../components/StatCard";
 import WelcomeBanner from "../../components/WelcomeBanner";
 import RefreshableScreen from "../../components/RefreshableScreen";
-import { useAuth } from "../../auth/AuthContext";
+import { ROLES, useAuth } from "../../auth/AuthContext";
 import { examsService, notificationsService, schedulesService } from "../../services";
 import { colors, spacing } from "../../theme";
 
@@ -17,7 +17,9 @@ export default function StudentHomeScreen() {
     try {
       const [exams, schedule, notifications] = await Promise.all([
         examsService.listExamsForStudent(user?.studentId),
-        schedulesService.listForClass(user?.className || ""),
+        user?.role === ROLES.STUDENT
+          ? schedulesService.list({})
+          : schedulesService.listForClass(user?.className || ""),
         notificationsService.list()
       ]);
       setStats({

@@ -16,7 +16,7 @@ export default function StudentScheduleReadOnly() {
     setLoading(true);
     try {
       const list = await schedulesService.list({ day: "ALL", q: "" });
-      setRows(list.filter((r) => r.className === className));
+      setRows(list);
     } catch (err) {
       alert(err?.message || "Ders programı yüklenemedi.");
     } finally {

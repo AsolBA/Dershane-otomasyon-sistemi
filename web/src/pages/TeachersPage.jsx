@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
-import { teachersService } from "../services";
-import { TEACHER_BRANCHES } from "../utils/constants";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { coursesService, teachersService } from "../services";
+import { mergeTeacherBranches } from "../utils/branches";
+import { loginEmailError, normalizeEmail } from "../utils/email";
 
 const emptyForm = {
   fullName: "",
@@ -19,6 +20,12 @@ export default function TeachersPage() {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [showForm, setShowForm] = useState(false);
+  const [courses, setCourses] = useState([]);
+
+  const branchOptions = useMemo(
+    () => mergeTeacherBranches({ courses, teachers: rows }),
+    [courses, rows]
+  );
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -34,6 +41,10 @@ export default function TeachersPage() {
   useEffect(() => {
     reload();
   }, [reload]);
+
+  useEffect(() => {
+    coursesService.list({ onlyActive: true }).then(setCourses).catch(() => setCourses([]));
+  }, []);
 
   function openCreate() {
     setEditingId(null);
@@ -62,13 +73,19 @@ export default function TeachersPage() {
   async function save() {
     const payload = {
       fullName: form.fullName.trim(),
-      email: form.email.trim(),
+      email: normalizeEmail(form.email),
       branch: form.branch.trim(),
       phone: form.phone.trim(),
       active: Boolean(form.active)
     };
 
-    if (!payload.fullName || !payload.email || !payload.branch || !TEACHER_BRANCHES.includes(payload.branch)) {
+    const emailErr = loginEmailError(payload.email);
+    if (emailErr) {
+      alert(emailErr);
+      return;
+    }
+
+    if (!payload.fullName || !payload.email || !payload.branch || !branchOptions.includes(payload.branch)) {
       alert("Ad, e-posta ve branş zorunludur.");
       return;
     }
@@ -202,7 +219,7 @@ export default function TeachersPage() {
               Branş
               <select value={form.branch} onChange={(e) => setForm((p) => ({ ...p, branch: e.target.value }))}>
                 <option value="">Branş seçin</option>
-                {TEACHER_BRANCHES.map((b) => (
+                {branchOptions.map((b) => (
                   <option key={b} value={b}>
                     {b}
                   </option>
