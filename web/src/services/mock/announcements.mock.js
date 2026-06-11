@@ -15,6 +15,7 @@ export async function create(payload) {
   const row = {
     id: createId("ann"),
     createdAt,
+    attachments: payload.attachments ?? [],
     ...payload
   };
   getStore().announcements.unshift(row);

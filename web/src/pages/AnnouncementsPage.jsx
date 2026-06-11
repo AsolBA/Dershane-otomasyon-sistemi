@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ROLES, useAuth } from "../auth/AuthContext";
+import AnnouncementDetailModal from "../components/AnnouncementDetailModal";
 import { announcementsService, classesService } from "../services";
 
 const MANAGE_ROLES = [ROLES.ADMIN, ROLES.DIRECTOR, ROLES.TEACHER];
@@ -14,12 +15,16 @@ const emptyForm = {
 export default function AnnouncementsPage() {
   const { user } = useAuth();
   const canManage = MANAGE_ROLES.includes(user?.role);
+  const createFileRef = useRef(null);
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [classOptions, setClassOptions] = useState([]);
   const [query, setQuery] = useState("");
   const [form, setForm] = useState(emptyForm);
+  const [pendingFiles, setPendingFiles] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [selected, setSelected] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -42,12 +47,14 @@ export default function AnnouncementsPage() {
 
   function openCreate() {
     setForm(emptyForm);
+    setPendingFiles([]);
     setShowForm(true);
   }
 
   function closeForm() {
     setShowForm(false);
     setForm(emptyForm);
+    setPendingFiles([]);
   }
 
   async function save() {
@@ -65,23 +72,32 @@ export default function AnnouncementsPage() {
       return;
     }
 
+    setSaving(true);
     try {
-      await announcementsService.create({ title, body, scope, className });
+      await announcementsService.create({ title, body, scope, className, files: pendingFiles });
       await reload();
       closeForm();
     } catch (err) {
       alert(err?.message || "Kayıt başarısız.");
+    } finally {
+      setSaving(false);
     }
   }
 
-  async function remove(id) {
+  async function remove(id, e) {
+    e?.stopPropagation();
     if (!confirm("Bu duyuruyu silmek istiyor musunuz?")) return;
     try {
       await announcementsService.remove(id);
+      if (String(selected?.id) === String(id)) setSelected(null);
       await reload();
     } catch (err) {
       alert(err?.message || "Silme başarısız.");
     }
+  }
+
+  function openDetail(row) {
+    setSelected(row);
   }
 
   return (
@@ -91,8 +107,8 @@ export default function AnnouncementsPage() {
           <h1>Duyurular</h1>
           <p className="muted">
             {canManage
-              ? "Duyuru oluşturma ve listeleme. Yeni duyuru bildirim merkezine düşer."
-              : "Size özel duyurular (salt okunur)."}
+              ? "Duyuru oluşturma, ek dosya ve listeleme. Detay için satıra tıklayın."
+              : "Duyuruları görmek için satıra tıklayın."}
           </p>
         </div>
         <div className="toolbar">
@@ -111,15 +127,15 @@ export default function AnnouncementsPage() {
             <div>
               <h2 style={{ margin: 0 }}>Yeni duyuru</h2>
               <p className="muted" style={{ margin: "6px 0 0" }}>
-                Kapsam: genel veya sınıf bazlı.
+                Kapsam: genel veya sınıf bazlı. PDF, Word vb. ekleyebilirsiniz.
               </p>
             </div>
             <div className="toolbar">
               <button className="btn" type="button" onClick={closeForm}>
                 İptal
               </button>
-              <button className="btn btn-primary" type="button" onClick={save}>
-                Yayınla
+              <button className="btn btn-primary" type="button" onClick={save} disabled={saving}>
+                {saving ? "Yayınlanıyor…" : "Yayınla"}
               </button>
             </div>
           </div>
@@ -163,6 +179,21 @@ export default function AnnouncementsPage() {
                 </select>
               </label>
             ) : null}
+            <label style={{ gridColumn: "1 / -1" }}>
+              Ek dosyalar (isteğe bağlı)
+              <input
+                ref={createFileRef}
+                type="file"
+                multiple
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                onChange={(e) => setPendingFiles(Array.from(e.target.files || []))}
+              />
+              {pendingFiles.length ? (
+                <div className="muted" style={{ marginTop: 6, fontSize: 13 }}>
+                  {pendingFiles.map((f) => f.name).join(", ")}
+                </div>
+              ) : null}
+            </label>
           </div>
         </div>
       ) : null}
@@ -174,6 +205,7 @@ export default function AnnouncementsPage() {
               <tr>
                 <th>Duyuru</th>
                 <th>Kapsam</th>
+                <th>Ek</th>
                 <th>Tarih</th>
                 <th />
               </tr>
@@ -181,43 +213,49 @@ export default function AnnouncementsPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={4} className="muted">
+                  <td colSpan={5} className="muted">
                     Yükleniyor…
                   </td>
                 </tr>
               ) : null}
               {!loading
                 ? rows.map((r) => (
-                <tr key={r.id}>
-                  <td>
-                    <div style={{ fontWeight: 700 }}>{r.title}</div>
-                    <div className="muted" style={{ whiteSpace: "pre-wrap" }}>
-                      {r.body}
-                    </div>
-                  </td>
-                  <td>
-                    {r.scope === "ALL" ? (
-                      <span className="pill">Genel</span>
-                    ) : (
-                      <span className="pill">
-                        Sınıf: <strong>{r.className}</strong>
-                      </span>
-                    )}
-                  </td>
-                  <td className="muted">{new Date(r.createdAt).toLocaleString()}</td>
-                  <td style={{ width: 120 }}>
-                    {canManage ? (
-                      <button className="btn btn-danger" type="button" onClick={() => remove(r.id)}>
-                        Sil
-                      </button>
-                    ) : null}
-                  </td>
-                </tr>
+                    <tr
+                      key={r.id}
+                      className="clickable-row"
+                      onClick={() => openDetail(r)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <td>
+                        <div style={{ fontWeight: 700 }}>{r.title}</div>
+                        <div className="muted" style={{ whiteSpace: "pre-wrap" }}>
+                          {r.body}
+                        </div>
+                      </td>
+                      <td>
+                        {r.scope === "ALL" ? (
+                          <span className="pill">Genel</span>
+                        ) : (
+                          <span className="pill">
+                            Sınıf: <strong>{r.className}</strong>
+                          </span>
+                        )}
+                      </td>
+                      <td className="muted">{r.attachments?.length ? `${r.attachments.length} dosya` : "—"}</td>
+                      <td className="muted">{new Date(r.createdAt).toLocaleString()}</td>
+                      <td style={{ width: 120 }} onClick={(e) => e.stopPropagation()}>
+                        {canManage ? (
+                          <button className="btn btn-danger" type="button" onClick={(e) => remove(r.id, e)}>
+                            Sil
+                          </button>
+                        ) : null}
+                      </td>
+                    </tr>
                   ))
                 : null}
               {!loading && rows.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="muted">
+                  <td colSpan={5} className="muted">
                     Kayıt bulunamadı.
                   </td>
                 </tr>
@@ -226,6 +264,13 @@ export default function AnnouncementsPage() {
           </table>
         </div>
       </div>
+
+      <AnnouncementDetailModal
+        item={selected}
+        canManage={canManage}
+        onClose={() => setSelected(null)}
+        onUpdated={reload}
+      />
     </section>
   );
 }

@@ -22,7 +22,7 @@ const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
 
 export default function SchedulesPage() {
   const { user } = useAuth();
-  if (user?.role === ROLES.STUDENT) {
+  if (user?.role === ROLES.STUDENT || user?.role === ROLES.PARENT) {
     return <StudentScheduleReadOnly />;
   }
   return <ScheduleAdminPage />;

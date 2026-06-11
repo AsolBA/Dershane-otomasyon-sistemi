@@ -62,7 +62,7 @@ function filterSchedules(rows, q) {
 }
 
 export async function list({ day, q } = {}) {
-  const params = new URLSearchParams();
+  const params = new URLSearchParams({ limit: "100" });
   if (day && day !== "ALL") params.set("dayOfWeek", String(dayNameToNumber(day)));
   const [data, idToName] = await Promise.all([
     apiRequest(`/schedules?${params.toString()}`),
@@ -70,6 +70,13 @@ export async function list({ day, q } = {}) {
   ]);
   const rows = unwrapList(data).map((row) => mapApiScheduleToUi(row, idToName));
   return filterSchedules(rows, q);
+}
+
+export async function listForClass(className) {
+  const rows = await list({ day: "ALL", q: "" });
+  if (!className) return rows;
+  const normalized = String(className).trim().toLowerCase();
+  return rows.filter((r) => String(r.className || "").trim().toLowerCase() === normalized);
 }
 
 export async function checkConflict(candidate, ignoreId) {

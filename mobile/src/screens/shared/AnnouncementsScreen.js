@@ -74,7 +74,9 @@ export default function AnnouncementsScreen() {
             </Text>
             <View style={styles.cardFooter}>
               <Text style={styles.meta}>{formatAnnouncementScope(item.scope, item.className)}</Text>
-              <Text style={styles.hint}>Detay için dokun</Text>
+              <Text style={styles.hint}>
+                {item.attachments?.length ? `${item.attachments.length} ek · ` : ""}Detay için dokun
+              </Text>
             </View>
             <Text style={styles.date}>{formatDateTime(item.createdAt)}</Text>
           </Pressable>

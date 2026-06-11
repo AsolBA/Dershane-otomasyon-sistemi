@@ -43,6 +43,7 @@ function navItemsForRole(role) {
   if (role === ROLES.PARENT) {
     return [
       ...base,
+      { to: "/schedules", label: "Program" },
       { to: "/attendance", label: "Devamsızlık" },
       { to: "/exams", label: "Sonuçlar" },
       { to: "/announcements", label: "Duyurular" },

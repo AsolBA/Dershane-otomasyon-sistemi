@@ -101,11 +101,13 @@ export default function TeachersPage() {
   }
 
   async function remove(id) {
-    if (!confirm("Bu kaydı silmek istiyor musunuz?")) return;
+    if (!confirm("Bu öğretmen pasife alınacak ve listeden kaldırılacak. Devam edilsin mi?")) return;
     try {
       await teachersService.remove(id);
-      if (editingId === id) closeForm();
+      if (String(editingId) === String(id)) closeForm();
+      setOnlyActive(true);
       await reload();
+      alert("Öğretmen pasife alındı.");
     } catch (err) {
       alert(err?.message || "Silme başarısız.");
     }

@@ -32,3 +32,15 @@ export function formatDay(day) {
 export function roleLabel(role) {
   return ROLE_LABELS[role] || role || "-";
 }
+
+export function formatAnnouncementScope(scope, className) {
+  if (scope === "CLASS" && className) return `Sınıf: ${className}`;
+  return "Genel";
+}
+
+export function formatDateTime(value) {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return String(value);
+  return d.toLocaleString();
+}

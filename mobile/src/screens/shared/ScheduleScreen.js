@@ -1,29 +1,41 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import WeeklyScheduleGrid from "../../components/WeeklyScheduleGrid";
 import { ROLES, useAuth } from "../../auth/AuthContext";
-import { schedulesService } from "../../services";
-import { formatDay } from "../../utils/labels";
-import { colors, commonStyles, radius, shadow, spacing } from "../../theme";
+import { schedulesService, studentsService } from "../../services";
+import { colors, spacing } from "../../theme";
 
 export default function ScheduleScreen() {
   const { user } = useAuth();
+  const isParent = user?.role === ROLES.PARENT;
   const [rows, setRows] = useState([]);
+  const [classLabel, setClassLabel] = useState(user?.className || "");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const reload = useCallback(async () => {
     try {
-      const data =
-        user?.role === ROLES.STUDENT
-          ? await schedulesService.list({})
-          : user?.className
-            ? await schedulesService.listForClass(user.className)
-            : await schedulesService.list({});
-      setRows(data);
+      if (user?.role === ROLES.STUDENT) {
+        setClassLabel(user.className || "");
+        setRows(await schedulesService.list({}));
+        return;
+      }
+
+      if (isParent && user?.linkedStudentId) {
+        const student = await studentsService.getById(user.linkedStudentId);
+        const cn = student.className || "";
+        setClassLabel(cn);
+        setRows(cn ? await schedulesService.listForClass(cn) : []);
+        return;
+      }
+
+      const cn = user?.className || "";
+      setClassLabel(cn);
+      setRows(cn ? await schedulesService.listForClass(cn) : await schedulesService.list({}));
     } catch (err) {
       alert(err?.message || "Program yüklenemedi.");
     }
-  }, [user?.role, user?.className]);
+  }, [user, isParent]);
 
   useEffect(() => {
     (async () => {
@@ -48,48 +60,24 @@ export default function ScheduleScreen() {
   }
 
   return (
-    <FlatList
-      contentContainerStyle={styles.list}
-      data={rows}
-      keyExtractor={(item) => item.id}
+    <ScrollView
+      contentContainerStyle={styles.container}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      ListHeaderComponent={
-        user?.className || rows[0]?.className ? (
-          <Text style={styles.header}>
-            <Text style={styles.headerStrong}>{user?.className || rows[0]?.className}</Text> sınıfı programı
-          </Text>
-        ) : null
-      }
-      ListEmptyComponent={<Text style={commonStyles.empty}>Program kaydı yok.</Text>}
-      renderItem={({ item }) => (
-        <View style={styles.card}>
-          <Text style={styles.title}>
-            {formatDay(item.day)} · {item.startTime}–{item.endTime}
-          </Text>
-          <Text style={styles.line}>{item.courseName}</Text>
-          <Text style={styles.muted}>Öğretmen: {item.teacherName || "—"}</Text>
-          <Text style={styles.muted}>Derslik: {item.room || "—"}</Text>
-        </View>
-      )}
-    />
+    >
+      {classLabel ? (
+        <Text style={styles.header}>
+          <Text style={styles.headerStrong}>{classLabel}</Text> sınıfı haftalık programı
+        </Text>
+      ) : null}
+
+      <WeeklyScheduleGrid items={rows} emptyMessage="Bu sınıf için program kaydı yok." />
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.bg },
-  list: { padding: spacing.md, backgroundColor: colors.bg },
+  container: { padding: spacing.md, backgroundColor: colors.bg, flexGrow: 1 },
   header: { marginBottom: spacing.md, color: colors.muted, fontSize: 14 },
-  headerStrong: { fontWeight: "700", color: colors.text },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-    ...shadow.card
-  },
-  title: { fontSize: 16, fontWeight: "700", color: colors.text },
-  line: { marginTop: 6, fontSize: 15, color: colors.text },
-  muted: { marginTop: 4, color: colors.muted, fontSize: 14 }
+  headerStrong: { fontWeight: "700", color: colors.text }
 });
