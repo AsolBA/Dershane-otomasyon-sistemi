@@ -29,14 +29,33 @@ async function findClassOverlaps({ classId, dayOfWeek, startTime, endTime }, exc
   return query(sql, params);
 }
 
+async function findRoomOverlaps({ room, dayOfWeek, startTime, endTime }, excludeId) {
+  const normalizedRoom = String(room ?? "").trim();
+  if (!normalizedRoom) return { rows: [] };
+
+  const params = [normalizedRoom, dayOfWeek, startTime, endTime];
+  let sql = `
+    SELECT id, teacher_id, class_id, day_of_week, start_time, end_time, room
+    FROM schedules
+    WHERE TRIM(room) = $1 AND day_of_week = $2
+      AND ($3::time < end_time AND $4::time > start_time)`;
+  if (excludeId) {
+    sql += ` AND id <> $5`;
+    params.push(excludeId);
+  }
+  return query(sql, params);
+}
+
 export async function assertNoScheduleConflict(payload, excludeScheduleId = null) {
-  const [teacherOverlaps, classOverlaps] = await Promise.all([
+  const [teacherOverlaps, classOverlaps, roomOverlaps] = await Promise.all([
     findTeacherOverlaps(payload, excludeScheduleId),
     findClassOverlaps(payload, excludeScheduleId),
+    findRoomOverlaps(payload, excludeScheduleId),
   ]);
   const conflicts = [
     ...teacherOverlaps.rows.map((row) => ({ type: "teacher_overlap", scheduleId: row.id, schedule: row })),
     ...classOverlaps.rows.map((row) => ({ type: "class_overlap", scheduleId: row.id, schedule: row })),
+    ...roomOverlaps.rows.map((row) => ({ type: "room_overlap", scheduleId: row.id, schedule: row })),
   ];
   if (conflicts.length > 0) {
     throw new AppError(409, "SCHEDULE_CONFLICT", "Ders programi cakisiyor.", conflicts);
@@ -136,6 +155,7 @@ export async function updateSchedule(id, payload) {
       dayOfWeek: Number(next.dayOfWeek),
       startTime: next.startTime,
       endTime: next.endTime,
+      room: next.room,
     },
     id,
   );

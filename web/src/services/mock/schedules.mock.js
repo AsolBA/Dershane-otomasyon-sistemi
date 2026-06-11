@@ -19,7 +19,12 @@ export async function listForClass(className) {
 }
 
 export async function checkConflict(candidate, ignoreId) {
-  return findScheduleConflicts({ rows: getStore().schedules, candidate, ignoreId });
+  const normalized = {
+    ...candidate,
+    startTime: normalizeTimeInput(candidate.startTime),
+    endTime: normalizeTimeInput(candidate.endTime)
+  };
+  return findScheduleConflicts({ rows: getStore().schedules, candidate: normalized, ignoreId });
 }
 
 export async function create(payload) {
