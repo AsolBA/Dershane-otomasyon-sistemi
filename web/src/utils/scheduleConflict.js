@@ -29,12 +29,17 @@ function parseTimeToMinutes(value) {
 }
 
 function intervalsOverlap(aStart, aEnd, bStart, bEnd) {
-  // [start, end) overlap check, end exclusive
   return aStart < bEnd && bStart < aEnd;
+}
+
+function sameText(a, b) {
+  return String(a ?? "").trim().toLowerCase() === String(b ?? "").trim().toLowerCase();
 }
 
 export function findScheduleConflicts({ rows, candidate, ignoreId }) {
   const day = String(candidate.day || "").trim();
+  const className = String(candidate.className || "").trim();
+  const room = String(candidate.room || "").trim();
   const start = parseTimeToMinutes(candidate.startTime);
   const end = parseTimeToMinutes(candidate.endTime);
 
@@ -46,6 +51,14 @@ export function findScheduleConflicts({ rows, candidate, ignoreId }) {
   if (errors.length) return { ok: false, errors, conflicts: [] };
 
   const conflicts = [];
+  const seen = new Set();
+
+  function pushConflict(type, message, row) {
+    const key = `${type}:${row.id}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    conflicts.push({ type, message, row });
+  }
 
   for (const row of rows) {
     if (ignoreId != null && String(row.id) === String(ignoreId)) continue;
@@ -54,27 +67,33 @@ export function findScheduleConflicts({ rows, candidate, ignoreId }) {
     const rs = parseTimeToMinutes(row.startTime);
     const re = parseTimeToMinutes(row.endTime);
     if (rs == null || re == null || re <= rs) continue;
-
     if (!intervalsOverlap(start, end, rs, re)) continue;
 
-    // Same class overlap
-    if (String(row.className).trim() === String(candidate.className).trim()) {
-      conflicts.push({
-        type: "CLASS",
-        message: `Sınıf çakışması: ${row.className} ayni gunde (${day}) ${row.startTime}-${row.endTime} aralığıyla çakışıyor.`,
+    const slot = `${row.startTime}-${row.endTime}`;
+
+    if (className && sameText(row.className, className)) {
+      pushConflict(
+        "CLASS",
+        `Aynı sınıfta aynı anda iki ders olamaz: ${className} (${day}, ${slot}).`,
         row
-      });
+      );
     }
 
-    // Same teacher overlap
     if (String(row.teacherId) === String(candidate.teacherId)) {
-      conflicts.push({
-        type: "TEACHER",
-        message: `Öğretmen cakismasi: ayni gunde (${day}) ${row.startTime}-${row.endTime} araligiyla başka ders var.`,
+      pushConflict(
+        "TEACHER",
+        `Aynı öğretmen aynı anda iki derste olamaz (${day}, ${slot}).`,
         row
-      });
+      );
     }
 
+    if (room && sameText(row.room, room)) {
+      pushConflict(
+        "ROOM",
+        `Aynı derslikte aynı anda iki ders olamaz: ${room} (${day}, ${slot}).`,
+        row
+      );
+    }
   }
 
   return { ok: conflicts.length === 0, errors: [], conflicts };

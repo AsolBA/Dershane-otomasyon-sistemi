@@ -32,6 +32,7 @@ function ScheduleAdminPage() {
   const [query, setQuery] = useState("");
   const [dayFilter, setDayFilter] = useState("ALL");
   const [rows, setRows] = useState([]);
+  const [allRows, setAllRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [teachers, setTeachers] = useState([]);
   const [courses, setCourses] = useState([]);
@@ -44,7 +45,12 @@ function ScheduleAdminPage() {
   const reload = useCallback(async () => {
     setLoading(true);
     try {
-      setRows(await schedulesService.list({ day: dayFilter, q: query }));
+      const [filtered, all] = await Promise.all([
+        schedulesService.list({ day: dayFilter, q: query }),
+        schedulesService.list({ day: "ALL", q: "" })
+      ]);
+      setRows(filtered);
+      setAllRows(all);
     } catch (err) {
       alert(err?.message || "Liste yüklenemedi.");
     } finally {
@@ -101,9 +107,9 @@ function ScheduleAdminPage() {
       startTime: normalizeTimeInput(form.startTime),
       endTime: normalizeTimeInput(form.endTime)
     };
-    const res = findScheduleConflicts({ rows, candidate, ignoreId: editingId });
+    const res = findScheduleConflicts({ rows: allRows, candidate, ignoreId: editingId });
     return res.conflicts;
-  }, [showForm, form, rows, editingId]);
+  }, [showForm, form, allRows, editingId]);
 
   async function openCreate() {
     setEditingId(null);
@@ -168,14 +174,20 @@ function ScheduleAdminPage() {
       return;
     }
 
-    const conflictCheck = findScheduleConflicts({ rows, candidate: payload, ignoreId: editingId });
-    if (!conflictCheck.ok) {
-      const msg = [...conflictCheck.errors, ...conflictCheck.conflicts.map((c) => c.message)].join("\n");
+    const localCheck = findScheduleConflicts({ rows: allRows, candidate: payload, ignoreId: editingId });
+    if (!localCheck.ok) {
+      const msg = [...localCheck.errors, ...localCheck.conflicts.map((c) => c.message)].join("\n");
       alert(msg || "Program çakışması var.");
       return;
     }
 
     try {
+      const remoteCheck = await schedulesService.checkConflict(payload, editingId);
+      if (!remoteCheck.ok) {
+        const msg = [...remoteCheck.errors, ...remoteCheck.conflicts.map((c) => c.message)].join("\n");
+        alert(msg || "Program çakışması var.");
+        return;
+      }
       if (editingId) await schedulesService.update(editingId, payload);
       else await schedulesService.create(payload);
       await Promise.all([reload(), loadRefs()]);
@@ -225,12 +237,9 @@ function ScheduleAdminPage() {
           <ul style={{ margin: 0, paddingLeft: 18 }}>
             {conflictPreview.slice(0, 6).map((c, idx) => (
               <li key={idx} className="muted">
-                <strong>{c.type}</strong>: {c.message}
+                {c.message}
               </li>
             ))}
-            <li className="muted" style={{ marginTop: 8 }}>
-              Farklı öğretmen + farklı sınıf aynı saatte eklenebilir. Çakışma yalnızca aynı öğretmen veya aynı sınıf için geçerlidir.
-            </li>
           </ul>
           {conflictPreview.length > 6 ? <div className="muted" style={{ marginTop: 8 }}>+ daha fazla...</div> : null}
         </div>

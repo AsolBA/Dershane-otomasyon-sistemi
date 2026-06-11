@@ -1,4 +1,5 @@
 import { apiRequest } from "../httpClient.js";
+import { findScheduleConflicts } from "../../utils/scheduleConflict.js";
 import {
   buildClassMaps,
   dayNameToNumber,
@@ -9,6 +10,26 @@ import {
   unwrapList
 } from "./mappers.js";
 import * as classesApi from "./classes.api.js";
+
+function mapBackendConflictsToUi(conflicts, idToName) {
+  return (conflicts || []).map((entry) => {
+    const s = entry.schedule || {};
+    const className = idToName.get(Number(s.class_id ?? s.classId)) ?? "";
+    const day = dayNumberToName(s.day_of_week ?? s.dayOfWeek);
+    const startTime = formatTime(s.start_time ?? s.startTime);
+    const endTime = formatTime(s.end_time ?? s.endTime);
+    const slot = `${startTime}-${endTime}`;
+    let message = "Program çakışması.";
+    if (entry.type === "class_overlap") {
+      message = `Aynı sınıfta aynı anda iki ders olamaz: ${className} (${day}, ${slot}).`;
+    } else if (entry.type === "teacher_overlap") {
+      message = `Aynı öğretmen aynı anda iki derste olamaz (${day}, ${slot}).`;
+    } else if (entry.type === "room_overlap") {
+      message = `Aynı derslikte aynı anda iki ders olamaz: ${s.room} (${day}, ${slot}).`;
+    }
+    return { type: entry.type, message, row: s };
+  });
+}
 
 function mapApiScheduleToUi(row, idToName) {
   if (!row) return row;
@@ -81,10 +102,19 @@ export async function listForClass(className) {
 
 export async function checkConflict(candidate, ignoreId) {
   const body = await uiPayloadToApi(candidate);
-  return apiRequest("/schedules/conflict-check", {
+  const idToName = await loadClassNameMap();
+  const res = await apiRequest("/schedules/conflict-check", {
     method: "POST",
     body: JSON.stringify({ ...body, excludeScheduleId: ignoreId ? Number(ignoreId) : undefined })
   });
+  if (res?.hasConflict) {
+    return {
+      ok: false,
+      errors: [],
+      conflicts: mapBackendConflictsToUi(res.conflicts, idToName)
+    };
+  }
+  return { ok: true, errors: [], conflicts: [] };
 }
 
 export async function create(payload) {

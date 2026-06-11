@@ -58,6 +58,7 @@ export const conflictCheck = asyncHandler(async (req, res) => {
     dayOfWeek: Number(b.dayOfWeek),
     startTime: b.startTime,
     endTime: b.endTime,
+    room: b.room,
   };
   if (
     ![payload.classId, payload.courseId, payload.teacherId, payload.dayOfWeek].every(
