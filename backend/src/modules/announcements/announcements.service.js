@@ -98,7 +98,13 @@ async function notifyUsersForAnnouncement(announcement) {
     );
     userRows = scoped.rows;
   } else {
-    const all = await query(`SELECT id FROM users WHERE is_active = true`);
+    const all = await query(
+      `
+      SELECT u.id
+      FROM users u
+      JOIN roles r ON r.id = u.role_id
+      WHERE u.is_active = true AND r.name IN ('student', 'parent', 'teacher', 'admin', 'manager')`,
+    );
     userRows = all.rows;
   }
 

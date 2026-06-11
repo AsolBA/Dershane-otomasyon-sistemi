@@ -11,6 +11,13 @@ export async function list({ day, q } = {}) {
   return rows;
 }
 
+export async function listForClass(className) {
+  const rows = await list({ day: "ALL", q: "" });
+  if (!className) return rows;
+  const normalized = String(className).trim().toLowerCase();
+  return rows.filter((r) => String(r.className || "").trim().toLowerCase() === normalized);
+}
+
 export async function checkConflict(candidate, ignoreId) {
   return findScheduleConflicts({ rows: getStore().schedules, candidate, ignoreId });
 }

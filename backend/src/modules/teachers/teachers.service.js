@@ -7,10 +7,14 @@ export async function getTeacherIdByUserId(userId) {
   return r.rows[0]?.id ?? null;
 }
 
-export async function listTeachers(pagination, search) {
+export async function listTeachers(pagination, search, { isActive } = {}) {
   const conditions = ["1=1"];
   const params = [];
   let p = 1;
+  if (isActive !== undefined) {
+    conditions.push(`u.is_active = $${p++}`);
+    params.push(Boolean(isActive));
+  }
   if (search) {
     conditions.push(
       `(LOWER(u.email) LIKE $${p} OR LOWER(u.first_name) LIKE $${p} OR LOWER(t.branch) LIKE $${p})`,

@@ -35,19 +35,23 @@ function mapApiScheduleToUi(row, idToName, teacherNameById, courseNameById) {
 }
 
 async function loadTeacherAndCourseMaps() {
-  const [teachers, courses] = await Promise.all([
-    teachersApi.list({ onlyActive: true }),
-    coursesApi.list({ onlyActive: true })
-  ]);
   const teacherNameById = new Map();
-  for (const t of teachers) teacherNameById.set(String(t.id), t.fullName);
   const courseNameById = new Map();
-  for (const c of courses) courseNameById.set(String(c.id), c.name);
+  try {
+    const [teachers, courses] = await Promise.all([
+      teachersApi.list({ onlyActive: true }),
+      coursesApi.list({ onlyActive: true })
+    ]);
+    for (const t of teachers) teacherNameById.set(String(t.id), t.fullName);
+    for (const c of courses) courseNameById.set(String(c.id), c.name);
+  } catch {
+    /* program listesi yine de gösterilsin */
+  }
   return { teacherNameById, courseNameById };
 }
 
 export async function list({ day } = {}) {
-  const params = new URLSearchParams();
+  const params = new URLSearchParams({ limit: "100" });
   if (day && day !== "ALL") params.set("dayOfWeek", String(dayNameToNumber(day)));
   const [data, idToName, maps] = await Promise.all([
     apiRequest(`/schedules?${params.toString()}`),
@@ -62,5 +66,6 @@ export async function list({ day } = {}) {
 export async function listForClass(className) {
   const rows = await list({});
   if (!className) return rows;
-  return rows.filter((r) => r.className === className);
+  const normalized = String(className).trim().toLowerCase();
+  return rows.filter((r) => String(r.className || "").trim().toLowerCase() === normalized);
 }

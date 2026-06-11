@@ -1,7 +1,7 @@
 import { asyncHandler } from "../../utils/async-handler.js";
 import { sendSuccess } from "../../utils/api-response.js";
 import { AppError } from "../../utils/app-error.js";
-import { parseId, parsePagination } from "../../utils/query-params.js";
+import { optionalBool, parseId, parsePagination } from "../../utils/query-params.js";
 import * as svc from "./teachers.service.js";
 
 export const list = asyncHandler(async (req, res) => {
@@ -14,7 +14,11 @@ export const list = asyncHandler(async (req, res) => {
     const me = await svc.getTeacherById(tid);
     data = { items: [me], total: 1, page: 1, limit };
   } else {
-    data = await svc.listTeachers({ page, limit, offset }, search);
+    data = await svc.listTeachers(
+      { page, limit, offset },
+      search,
+      { isActive: optionalBool(req.query.isActive) },
+    );
   }
   return sendSuccess(res, data);
 });

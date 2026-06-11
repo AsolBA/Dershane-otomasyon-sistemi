@@ -11,6 +11,7 @@ import * as schedulesMock from "./mock/schedules.mock";
 import * as schedulesApi from "./api/schedules.api";
 import * as notificationsMock from "./mock/notifications.mock";
 import * as notificationsApi from "./api/notifications.api";
+import * as studentsApi from "./api/students.api";
 
 function pick(mock, api) {
   return USE_MOCK_API ? mock : api;
@@ -22,5 +23,6 @@ export const attendanceService = pick(attendanceMock, attendanceApi);
 export const announcementsService = pick(announcementsMock, announcementsApi);
 export const schedulesService = pick(schedulesMock, schedulesApi);
 export const notificationsService = pick(notificationsMock, notificationsApi);
+export const studentsService = USE_MOCK_API ? { getById: async () => ({ className: "" }) } : studentsApi;
 
 export { USE_MOCK_API, API_BASE_URL } from "./config";

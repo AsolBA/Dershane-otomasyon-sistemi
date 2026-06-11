@@ -1,10 +1,34 @@
 import React from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { readStoredSession } from "../auth/storage";
+import { announcementsService } from "../services";
 import { formatAnnouncementScope, formatDateTime } from "../utils/labels";
 import { colors, radius, spacing } from "../theme";
 
+function formatFileSize(bytes) {
+  const n = Number(bytes) || 0;
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export default function AnnouncementDetailModal({ visible, item, onClose }) {
   if (!item) return null;
+
+  async function openAttachment(att) {
+    try {
+      const session = await readStoredSession();
+      const url = announcementsService.getAttachmentOpenUrl(item.id, att.id, session.accessToken);
+      const supported = await Linking.canOpenURL(url);
+      if (!supported) {
+        Alert.alert("Dosya", "Bu dosya turu acilamiyor.");
+        return;
+      }
+      await Linking.openURL(url);
+    } catch (err) {
+      Alert.alert("Dosya", err?.message || "Ek acilamadi.");
+    }
+  }
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -29,11 +53,20 @@ export default function AnnouncementDetailModal({ visible, item, onClose }) {
 
             <Text style={styles.body}>{item.body}</Text>
 
-            {item.author ? (
-              <Text style={styles.footer}>
-                Yayınlayan: <Text style={styles.footerStrong}>{item.author}</Text>
-              </Text>
-            ) : null}
+            <Text style={styles.sectionTitle}>Ekler</Text>
+            {!item.attachments?.length ? (
+              <Text style={styles.mutedSmall}>Ek dosya yok.</Text>
+            ) : (
+              item.attachments.map((att) => (
+                <Pressable key={att.id} style={styles.attachmentRow} onPress={() => openAttachment(att)}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.attachmentName}>{att.name}</Text>
+                    <Text style={styles.mutedSmall}>{formatFileSize(att.size)}</Text>
+                  </View>
+                  <Text style={styles.openHint}>Aç</Text>
+                </Pressable>
+              ))
+            )}
           </ScrollView>
         </View>
       </View>
@@ -84,6 +117,19 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     color: colors.text
   },
-  footer: { marginTop: spacing.lg, fontSize: 13, color: colors.muted },
-  footerStrong: { fontWeight: "700", color: colors.text }
+  sectionTitle: { marginTop: spacing.lg, fontSize: 15, fontWeight: "700", color: colors.text },
+  mutedSmall: { marginTop: 8, fontSize: 13, color: colors.muted },
+  attachmentRow: {
+    marginTop: spacing.sm,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    backgroundColor: colors.bg,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm
+  },
+  attachmentName: { fontSize: 15, fontWeight: "600", color: colors.text },
+  openHint: { fontSize: 13, fontWeight: "700", color: colors.primary }
 });

@@ -40,8 +40,9 @@ function uiPayloadToApi(payload, { forUpdate = false } = {}) {
 }
 
 export async function list({ onlyActive, q } = {}) {
-  const params = new URLSearchParams();
+  const params = new URLSearchParams({ limit: "100" });
   if (q) params.set("search", q);
+  if (onlyActive) params.set("isActive", "true");
   const data = await apiRequest(`/teachers?${params.toString()}`);
   let rows = unwrapList(data).map(mapApiTeacherToUi);
   if (onlyActive) rows = rows.filter((r) => r.active);

@@ -1,28 +1,41 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useAuth } from "../auth/AuthContext";
-import { coursesService, schedulesService, teachersService } from "../services";
-import { formatDay } from "../utils/labels";
+import { ROLES, useAuth } from "../auth/AuthContext";
+import { coursesService, schedulesService, studentsService, teachersService } from "../services";
+import WeeklyScheduleGrid from "./WeeklyScheduleGrid";
 
 export default function StudentScheduleReadOnly() {
   const { user } = useAuth();
+  const isParent = user?.role === ROLES.PARENT;
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [teachers, setTeachers] = useState([]);
   const [courses, setCourses] = useState([]);
-
-  const className = user?.className || "";
+  const [classLabel, setClassLabel] = useState(user?.className || "");
 
   const reload = useCallback(async () => {
     setLoading(true);
     try {
-      const list = await schedulesService.list({ day: "ALL", q: "" });
-      setRows(list);
+      if (user?.role === ROLES.STUDENT) {
+        setClassLabel(user.className || "");
+        setRows(await schedulesService.list({ day: "ALL", q: "" }));
+        return;
+      }
+
+      if (isParent && user?.linkedStudentId) {
+        const student = await studentsService.getById(user.linkedStudentId);
+        const cn = student.className || "";
+        setClassLabel(cn);
+        setRows(cn ? await schedulesService.listForClass(cn) : []);
+        return;
+      }
+
+      setRows([]);
     } catch (err) {
       alert(err?.message || "Ders programı yüklenemedi.");
     } finally {
       setLoading(false);
     }
-  }, [className]);
+  }, [user, isParent]);
 
   useEffect(() => {
     reload();
@@ -55,68 +68,34 @@ export default function StudentScheduleReadOnly() {
     return map;
   }, [courses]);
 
-  const sorted = useMemo(() => {
-    return [...rows].sort((a, b) => {
-      const da = String(a.day).localeCompare(String(b.day));
-      if (da !== 0) return da;
-      return String(a.startTime).localeCompare(String(b.startTime));
-    });
-  }, [rows]);
-
   return (
     <section>
       <div className="page-header">
         <div>
-          <h1>Programım</h1>
+          <h1>{isParent ? "Öğrenci programı" : "Programım"}</h1>
           <p className="muted">
-            <strong>{className}</strong> sınıfına ait haftalık ders programı (salt okunur).
+            {classLabel ? (
+              <>
+                <strong>{classLabel}</strong> sınıfı haftalık programı (salt okunur).
+              </>
+            ) : (
+              "Haftalık ders programı (salt okunur)."
+            )}
           </p>
         </div>
       </div>
 
       <div className="card">
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Gün</th>
-                <th>Saat</th>
-                <th>Ders</th>
-                <th>Öğretmen</th>
-                <th>Derslik</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={5} className="muted">
-                    Yükleniyor…
-                  </td>
-                </tr>
-              ) : null}
-              {!loading && sorted.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="muted">
-                    Bu sınıf için program kaydı yok.
-                  </td>
-                </tr>
-              ) : null}
-              {!loading
-                ? sorted.map((r) => (
-                    <tr key={r.id}>
-                      <td style={{ fontWeight: 600 }}>{formatDay(r.day)}</td>
-                      <td>
-                        {r.startTime} – {r.endTime}
-                      </td>
-                      <td>{courseLabelById.get(String(r.courseId)) || r.courseId}</td>
-                      <td className="muted">{teacherNameById.get(String(r.teacherId)) || "—"}</td>
-                      <td>{r.room}</td>
-                    </tr>
-                  ))
-                : null}
-            </tbody>
-          </table>
-        </div>
+        {loading ? (
+          <p className="muted">Yükleniyor…</p>
+        ) : (
+          <WeeklyScheduleGrid
+            items={rows}
+            courseLabelById={courseLabelById}
+            teacherNameById={teacherNameById}
+            emptyMessage="Bu sınıf için program kaydı yok."
+          />
+        )}
       </div>
     </section>
   );

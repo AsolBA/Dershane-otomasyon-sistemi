@@ -7,15 +7,8 @@ import { query } from "../db.js";
 import { AppError } from "../utils/app-error.js";
 import { verifyAccessToken } from "../utils/tokens.js";
 
-export async function authenticate(req, _res, next) {
-  try {
-    const authorization = req.headers.authorization;
-    if (!authorization || !authorization.startsWith("Bearer ")) {
-      throw new AppError(401, "AUTH_UNAUTHORIZED", "Gecersiz veya eksik access token.");
-    }
-
-    const token = authorization.split(" ")[1];
-    const payload = verifyAccessToken(token);
+async function loadUserFromAccessToken(token) {
+  const payload = verifyAccessToken(token);
 
     const userResult = await query(
       `SELECT u.id, u.role_id, u.email, u.first_name, u.last_name, u.is_active, r.name AS role_name
@@ -30,25 +23,52 @@ export async function authenticate(req, _res, next) {
       throw new AppError(401, "AUTH_UNAUTHORIZED", "Kullanici aktif degil veya bulunamadi.");
     }
 
-    req.user = {
-      id: user.id,
-      roleId: user.role_id,
-      role: user.role_name,
-      email: user.email,
-      fullName: `${user.first_name} ${user.last_name}`.trim(),
-    };
+  return {
+    id: user.id,
+    roleId: user.role_id,
+    role: user.role_name,
+    email: user.email,
+    fullName: `${user.first_name} ${user.last_name}`.trim(),
+  };
+}
 
+function handleAuthError(error, next) {
+  if (error.name === "TokenExpiredError") {
+    return next(new AppError(401, "AUTH_TOKEN_EXPIRED", "Access token suresi doldu."));
+  }
+  if (error.name === "JsonWebTokenError") {
+    return next(new AppError(401, "AUTH_INVALID_TOKEN", "Access token gecersiz."));
+  }
+  next(error);
+}
+
+export async function authenticate(req, _res, next) {
+  try {
+    const authorization = req.headers.authorization;
+    if (!authorization || !authorization.startsWith("Bearer ")) {
+      throw new AppError(401, "AUTH_UNAUTHORIZED", "Gecersiz veya eksik access token.");
+    }
+    req.user = await loadUserFromAccessToken(authorization.split(" ")[1]);
     next();
   } catch (error) {
-    if (error.name === "TokenExpiredError") {
-      return next(new AppError(401, "AUTH_TOKEN_EXPIRED", "Access token suresi doldu."));
-    }
+    handleAuthError(error, next);
+  }
+}
 
-    if (error.name === "JsonWebTokenError") {
-      return next(new AppError(401, "AUTH_INVALID_TOKEN", "Access token gecersiz."));
+/** Dosya indirme: Authorization header veya ?accessToken= (mobil) */
+export async function authenticateFlexible(req, _res, next) {
+  try {
+    const authorization = req.headers.authorization;
+    const queryToken = req.query.accessToken ? String(req.query.accessToken) : null;
+    const token =
+      authorization && authorization.startsWith("Bearer ") ? authorization.split(" ")[1] : queryToken;
+    if (!token) {
+      throw new AppError(401, "AUTH_UNAUTHORIZED", "Gecersiz veya eksik access token.");
     }
-
-    next(error);
+    req.user = await loadUserFromAccessToken(token);
+    next();
+  } catch (error) {
+    handleAuthError(error, next);
   }
 }
 

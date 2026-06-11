@@ -39,7 +39,11 @@ export default function App() {
             <Route path="/notifications" element={<NotificationsPage />} />
           </Route>
 
-          <Route element={<RoleGate allow={[ROLES.ADMIN, ROLES.DIRECTOR, ROLES.TEACHER, ROLES.STUDENT]} />}>
+          <Route
+            element={
+              <RoleGate allow={[ROLES.ADMIN, ROLES.DIRECTOR, ROLES.TEACHER, ROLES.STUDENT, ROLES.PARENT]} />
+            }
+          >
             <Route path="/schedules" element={<SchedulesPage />} />
           </Route>
 
