@@ -21,11 +21,20 @@ export default function StudentScheduleReadOnly() {
         return;
       }
 
-      if (isParent && user?.linkedStudentId) {
-        const student = await studentsService.getById(user.linkedStudentId);
-        const cn = student.className || "";
+      if (isParent) {
+        const rows = await schedulesService.list({ day: "ALL", q: "" });
+        setRows(rows);
+        let cn = "";
+        if (user?.linkedStudentId) {
+          try {
+            const student = await studentsService.getById(user.linkedStudentId);
+            cn = student.className || "";
+          } catch {
+            /* devam */
+          }
+        }
+        if (!cn && rows[0]?.className) cn = rows[0].className;
         setClassLabel(cn);
-        setRows(cn ? await schedulesService.listForClass(cn) : []);
         return;
       }
 

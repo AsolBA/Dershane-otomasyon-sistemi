@@ -16,5 +16,6 @@ router.post("/:id/classes", authenticate, enrollRoles, ctrl.addClass);
 router.delete("/:id/classes/:classId", authenticate, enrollRoles, ctrl.removeClass);
 router.get("/:id", authenticate, ctrl.getById);
 router.patch("/:id", authenticate, manageStudents, ctrl.update);
+router.delete("/:id", authenticate, manageStudents, ctrl.remove);
 
 export default router;

@@ -20,7 +20,18 @@ export async function list({ onlyActive, q } = {}) {
 }
 
 export async function create(payload) {
-  const row = { id: createId("stu"), ...payload };
+  const fullName = [payload.firstName, payload.lastName].filter(Boolean).join(" ").trim();
+  const row = {
+    id: createId("stu"),
+    fullName,
+    email: payload.email,
+    className: payload.className,
+    parentName: payload.parentName ?? "",
+    parentPhone: payload.parentPhone ?? "",
+    parentEmail: payload.parentEmail ?? "",
+    active: payload.active !== false,
+    ...payload
+  };
   getStore().students.unshift(row);
   return row;
 }
@@ -29,7 +40,14 @@ export async function update(id, payload) {
   const store = getStore();
   const idx = store.students.findIndex((r) => r.id === id);
   if (idx === -1) throw new Error("Öğrenci bulunamadı.");
-  store.students[idx] = { ...store.students[idx], ...payload };
+  const fullName = [payload.firstName, payload.lastName].filter(Boolean).join(" ").trim();
+  store.students[idx] = {
+    ...store.students[idx],
+    ...payload,
+    ...(fullName ? { fullName } : {}),
+    ...(payload.parentPhone !== undefined ? { parentPhone: payload.parentPhone } : {}),
+    ...(payload.parentName !== undefined ? { parentName: payload.parentName } : {})
+  };
   return store.students[idx];
 }
 

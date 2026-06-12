@@ -3,6 +3,8 @@ import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { ROLES, useAuth } from "../auth/AuthContext";
 import LoginScreen from "../screens/LoginScreen";
+import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
+import ChangePasswordScreen from "../screens/ChangePasswordScreen";
 import StudentTabs from "./StudentTabs";
 import ParentTabs from "./ParentTabs";
 import { colors, spacing } from "../theme";
@@ -27,7 +29,12 @@ export default function AppNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {!isAuthenticated ? (
-        <Stack.Screen name="Login" component={LoginScreen} />
+        <>
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+        </>
+      ) : user?.mustChangePassword ? (
+        <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
       ) : user?.role === ROLES.PARENT ? (
         <Stack.Screen name="ParentApp" component={ParentTabs} />
       ) : (

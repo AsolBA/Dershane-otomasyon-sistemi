@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import RequireAuth from "./components/RequireAuth";
+import RequirePasswordChanged from "./components/RequirePasswordChanged";
 import RoleGate from "./components/RoleGate";
 import { ROLES } from "./auth/AuthContext";
 import MainLayout from "./layouts/MainLayout";
@@ -10,6 +11,9 @@ import CoursesPage from "./pages/CoursesPage";
 import DashboardPage from "./pages/DashboardPage";
 import ExamsPage from "./pages/ExamsPage";
 import LoginPage from "./pages/LoginPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ChangePasswordPage from "./pages/ChangePasswordPage";
+import SettingsPage from "./pages/SettingsPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import SchedulesPage from "./pages/SchedulesPage";
@@ -21,9 +25,15 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
       <Route element={<RequireAuth />}>
+        <Route path="/change-password" element={<ChangePasswordPage />} />
+      </Route>
+
+      <Route element={<RequireAuth />}>
+        <Route element={<RequirePasswordChanged />}>
         <Route element={<MainLayout />}>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<DashboardPage />} />
@@ -62,6 +72,11 @@ export default function App() {
           <Route element={<RoleGate allow={[ROLES.ADMIN, ROLES.DIRECTOR, ROLES.TEACHER, ROLES.STUDENT, ROLES.PARENT]} />}>
             <Route path="/exams" element={<ExamsPage />} />
           </Route>
+
+          <Route element={<RoleGate allow={[ROLES.TEACHER, ROLES.STUDENT, ROLES.PARENT]} />}>
+            <Route path="/settings" element={<SettingsPage />} />
+          </Route>
+        </Route>
         </Route>
       </Route>
 

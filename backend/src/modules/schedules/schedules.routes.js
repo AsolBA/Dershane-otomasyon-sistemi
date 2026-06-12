@@ -5,7 +5,7 @@ import * as ctrl from "./schedules.controller.js";
 
 const router = Router();
 const manage = authorize("admin", "manager", "teacher");
-const readSchedules = authorize("admin", "manager", "teacher", "student");
+const readSchedules = authorize("admin", "manager", "teacher", "student", "parent");
 
 router.get("/", authenticate, readSchedules, ctrl.list);
 router.post("/conflict-check", authenticate, manage, ctrl.conflictCheck);

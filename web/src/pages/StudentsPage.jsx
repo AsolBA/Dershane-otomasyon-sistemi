@@ -1,11 +1,29 @@
-import { useCallback, useEffect, useState } from "react";
-import { classesService, parentsService, studentsService } from "../services";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import StudentImportModal from "../components/StudentImportModal";
+import { classesService, studentsService } from "../services";
+import { buildParentLoginEmail, buildStudentLoginEmail } from "../utils/email";
+import { parseStudentExcelFile } from "../utils/parseStudentExcel";
+
+function splitStudentName(fullName) {
+  const parts = String(fullName || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (parts.length === 0) return { firstName: "", lastName: "" };
+  if (parts.length === 1) return { firstName: parts[0], lastName: "" };
+  return { firstName: parts[0], lastName: parts.slice(1).join(" ") };
+}
+
+const readOnlyInputStyle = { background: "#f8fafc", color: "var(--muted)" };
 
 const emptyForm = {
-  fullName: "",
+  firstName: "",
+  lastName: "",
   email: "",
   className: "",
-  parentId: "",
+  parentName: "",
+  parentPhone: "",
+  parentEmail: "",
   active: true
 };
 
@@ -19,7 +37,25 @@ export default function StudentsPage() {
   const [form, setForm] = useState(emptyForm);
   const [showForm, setShowForm] = useState(false);
   const [classes, setClasses] = useState([]);
-  const [parents, setParents] = useState([]);
+  const [importRows, setImportRows] = useState(null);
+  const [importFileName, setImportFileName] = useState("");
+  const importInputRef = useRef(null);
+  const [showStudentPassword, setShowStudentPassword] = useState(false);
+  const [studentLoginPassword, setStudentLoginPassword] = useState("");
+  const [showParentPassword, setShowParentPassword] = useState(false);
+  const [parentLoginPassword, setParentLoginPassword] = useState("");
+
+  const generatedEmail = useMemo(
+    () => buildStudentLoginEmail(form.firstName, form.lastName),
+    [form.firstName, form.lastName]
+  );
+
+  const generatedParentEmail = useMemo(
+    () => buildParentLoginEmail(form.firstName, form.lastName),
+    [form.firstName, form.lastName]
+  );
+
+  const parentEmailPreview = form.parentEmail || generatedParentEmail;
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -42,10 +78,6 @@ export default function StudentsPage() {
       .list({ onlyActive: true })
       .then(setClasses)
       .catch(() => setClasses([]));
-    parentsService
-      .list()
-      .then(setParents)
-      .catch(() => setParents([]));
   }, []);
 
   function openCreate() {
@@ -57,14 +89,29 @@ export default function StudentsPage() {
     setShowForm(true);
   }
 
-  function openEdit(row) {
-    setEditingId(row.id);
+  async function openEdit(row) {
+    let record = row;
+    try {
+      record = { ...row, ...(await studentsService.getById(row.id)) };
+    } catch {
+      /* listeden devam */
+    }
+
+    const { firstName, lastName } = splitStudentName(record.fullName);
+    setEditingId(record.id);
+    setStudentLoginPassword(record.loginPassword || "");
+    setParentLoginPassword(record.parentLoginPassword || "");
+    setShowStudentPassword(false);
+    setShowParentPassword(false);
     setForm({
-      fullName: row.fullName,
-      email: row.email,
-      className: row.className,
-      parentId: row.parentId != null && row.parentId !== "" ? String(row.parentId) : "",
-      active: Boolean(row.active)
+      firstName,
+      lastName,
+      email: record.email || "",
+      className: record.className,
+      parentName: record.parentName || row.parentName || "",
+      parentPhone: record.parentPhone || row.parentPhone || "",
+      parentEmail: record.parentEmail || row.parentEmail || buildParentLoginEmail(firstName, lastName),
+      active: Boolean(record.active)
     });
     setShowForm(true);
   }
@@ -73,19 +120,41 @@ export default function StudentsPage() {
     setShowForm(false);
     setEditingId(null);
     setForm(emptyForm);
+    setShowStudentPassword(false);
+    setShowParentPassword(false);
+    setStudentLoginPassword("");
+    setParentLoginPassword("");
   }
 
   async function save() {
     const payload = {
-      fullName: form.fullName.trim(),
-      email: form.email.trim(),
+      firstName: form.firstName.trim(),
+      lastName: form.lastName.trim(),
+      email: editingId ? form.email.trim() : generatedEmail,
       className: form.className.trim(),
-      parentId: form.parentId,
+      parentName: form.parentName.trim(),
+      parentPhone: form.parentPhone.trim(),
+      parentEmail: editingId ? form.parentEmail.trim() : generatedParentEmail,
       active: Boolean(form.active)
     };
 
-    if (!payload.fullName || !payload.email || !payload.className) {
-      alert("Ad, e-posta ve sınıf zorunludur.");
+    if (!payload.firstName || !payload.lastName || !payload.className) {
+      alert("Ad, soyad ve sınıf zorunludur.");
+      return;
+    }
+
+    if (!payload.parentName) {
+      alert("Veli adı zorunludur.");
+      return;
+    }
+
+    if (!payload.parentPhone) {
+      alert("Veli telefon numarası zorunludur.");
+      return;
+    }
+
+    if (!editingId && (!payload.email || !payload.parentEmail)) {
+      alert("Geçerli ad ve soyad girerek e-postalar oluşturulmalı.");
       return;
     }
 
@@ -99,8 +168,38 @@ export default function StudentsPage() {
     }
   }
 
+  function openImportPicker() {
+    importInputRef.current?.click();
+  }
+
+  async function onImportFileSelected(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    try {
+      const knownClasses = classes.map((c) => c.name).filter(Boolean);
+      const rows = await parseStudentExcelFile(file, { knownClasses });
+      setImportFileName(file.name);
+      setImportRows(rows);
+    } catch (err) {
+      alert(err?.message || "Excel dosyası okunamadı.");
+    }
+  }
+
+  function closeImportModal() {
+    setImportRows(null);
+    setImportFileName("");
+  }
+
   async function remove(id) {
-    if (!confirm("Bu kaydı silmek istiyor musunuz?")) return;
+    if (
+      !confirm(
+        "Bu öğrenci kalıcı olarak silinecek (giriş hesabı, veli hesabı ve ilişkili kayıtlar dahil). Devam edilsin mi?"
+      )
+    ) {
+      return;
+    }
     try {
       await studentsService.remove(id);
       if (editingId === id) closeForm();
@@ -123,9 +222,21 @@ export default function StudentsPage() {
             <input type="checkbox" checked={onlyActive} onChange={(e) => setOnlyActive(e.target.checked)} />
             Sadece aktif
           </label>
-          <button className="btn btn-primary" type="button" onClick={openCreate}>
-            Yeni öğrenci
-          </button>
+          <div className="toolbar-actions-stack">
+            <button className="btn btn-primary" type="button" onClick={openCreate}>
+              Yeni öğrenci
+            </button>
+            <button className="btn btn-primary" type="button" onClick={openImportPicker}>
+              Öğrenci içe aktar
+            </button>
+            <input
+              ref={importInputRef}
+              type="file"
+              accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+              hidden
+              onChange={onImportFileSelected}
+            />
+          </div>
         </div>
       </div>
 
@@ -158,8 +269,9 @@ export default function StudentsPage() {
                   </td>
                   <td>{r.className}</td>
                   <td>
-                    <div>{r.parentName}</div>
-                    <div className="muted">{r.parentPhone}</div>
+                    <div>{r.parentName || "—"}</div>
+                    <div className="muted">{r.parentPhone || "—"}</div>
+                    {r.parentEmail ? <div className="muted">{r.parentEmail}</div> : null}
                   </td>
                   <td>
                     <span className={r.active ? "pill ok" : "pill bad"}>{r.active ? "Aktif" : "Pasif"}</span>
@@ -195,7 +307,9 @@ export default function StudentsPage() {
             <div>
               <h2 style={{ margin: 0 }}>{editingId ? "Öğrenci düzenle" : "Yeni öğrenci"}</h2>
               <p className="muted" style={{ margin: "6px 0 0" }}>
-                Öğrenci kayıt alanları.
+                {editingId
+                  ? "Öğrenci ve veli bilgilerini güncelleyin."
+                  : "Ad ve soyad girildiğinde öğrenci ve veli e-postaları otomatik oluşturulur."}
               </p>
             </div>
             <div className="toolbar">
@@ -210,12 +324,29 @@ export default function StudentsPage() {
 
           <div className="form-grid">
             <label>
-              Ad Soyad
-              <input value={form.fullName} onChange={(e) => setForm((p) => ({ ...p, fullName: e.target.value }))} />
+              Ad
+              <input
+                value={form.firstName}
+                onChange={(e) => setForm((p) => ({ ...p, firstName: e.target.value }))}
+                placeholder="Emirhan"
+              />
             </label>
             <label>
-              E-posta
-              <input value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} />
+              Soyad
+              <input
+                value={form.lastName}
+                onChange={(e) => setForm((p) => ({ ...p, lastName: e.target.value }))}
+                placeholder="Kıvanç"
+              />
+            </label>
+            <label>
+              Öğrenci e-posta
+              <input
+                value={editingId ? form.email : generatedEmail}
+                readOnly
+                style={readOnlyInputStyle}
+                placeholder="adsoyad.student@dershane.local"
+              />
             </label>
             <label>
               Sınıf
@@ -229,16 +360,63 @@ export default function StudentsPage() {
               </select>
             </label>
             <label>
-              Veli
-              <select value={form.parentId} onChange={(e) => setForm((p) => ({ ...p, parentId: e.target.value }))}>
-                <option value="">Veli seçilmedi</option>
-                {parents.map((p) => (
-                  <option key={p.id} value={String(p.id)}>
-                    {p.fullName} {p.phone ? `(${p.phone})` : ""}
-                  </option>
-                ))}
-              </select>
+              Veli ad soyad
+              <input
+                value={form.parentName}
+                onChange={(e) => setForm((p) => ({ ...p, parentName: e.target.value }))}
+                placeholder="Fatma Kaya"
+              />
             </label>
+            <label>
+              Veli telefon
+              <input
+                value={form.parentPhone}
+                onChange={(e) => setForm((p) => ({ ...p, parentPhone: e.target.value }))}
+                placeholder="5551234567"
+              />
+            </label>
+            <label>
+              Veli e-posta
+              <input
+                value={parentEmailPreview}
+                readOnly
+                style={readOnlyInputStyle}
+              />
+            </label>
+            {editingId ? (
+              <label>
+                Veli şifresi
+                <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 6 }}>
+                  <input
+                    readOnly
+                    value={
+                      parentLoginPassword
+                        ? showParentPassword
+                          ? parentLoginPassword
+                          : "••••••••••••"
+                        : "—"
+                    }
+                    style={{ ...readOnlyInputStyle, flex: 1, fontFamily: parentLoginPassword ? "monospace" : undefined }}
+                  />
+                  {parentLoginPassword ? (
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() => setShowParentPassword((v) => !v)}
+                      title={showParentPassword ? "Gizle" : "Göster"}
+                      aria-label={showParentPassword ? "Veli şifresini gizle" : "Veli şifresini göster"}
+                    >
+                      {showParentPassword ? "🙈" : "👁"}
+                    </button>
+                  ) : null}
+                </div>
+                {!parentLoginPassword ? (
+                  <span className="muted" style={{ fontSize: 12 }}>
+                    Kayıtlı veli şifresi yok. Veli şifresini bir kez değiştirdikten sonra burada görünür.
+                  </span>
+                ) : null}
+              </label>
+            ) : null}
             <label>
               Durum
               <select value={form.active ? "true" : "false"} onChange={(e) => setForm((p) => ({ ...p, active: e.target.value === "true" }))}>
@@ -246,8 +424,51 @@ export default function StudentsPage() {
                 <option value="false">Pasif</option>
               </select>
             </label>
+            {editingId ? (
+              <label>
+                Öğrenci şifresi
+                <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 6 }}>
+                  <input
+                    readOnly
+                    value={
+                      studentLoginPassword
+                        ? showStudentPassword
+                          ? studentLoginPassword
+                          : "••••••••••••"
+                        : "—"
+                    }
+                    style={{ ...readOnlyInputStyle, flex: 1, fontFamily: studentLoginPassword ? "monospace" : undefined }}
+                  />
+                  {studentLoginPassword ? (
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() => setShowStudentPassword((v) => !v)}
+                      title={showStudentPassword ? "Gizle" : "Göster"}
+                      aria-label={showStudentPassword ? "Şifreyi gizle" : "Şifreyi göster"}
+                    >
+                      {showStudentPassword ? "🙈" : "👁"}
+                    </button>
+                  ) : null}
+                </div>
+                {!studentLoginPassword ? (
+                  <span className="muted" style={{ fontSize: 12 }}>
+                    Kayıtlı şifre yok. Öğrenci şifresini bir kez değiştirdikten sonra burada görünür.
+                  </span>
+                ) : null}
+              </label>
+            ) : null}
           </div>
         </div>
+      ) : null}
+
+      {importRows ? (
+        <StudentImportModal
+          rows={importRows}
+          fileName={importFileName}
+          onClose={closeImportModal}
+          onImported={reload}
+        />
       ) : null}
     </section>
   );

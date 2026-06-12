@@ -7,7 +7,9 @@ const router = Router();
 
 router.get("/me", authenticate, ctrl.listMine);
 router.patch("/me/read-all", authenticate, ctrl.markReadAllMine);
+router.post("/me/delete", authenticate, ctrl.deleteMine);
 router.patch("/:id/read", authenticate, ctrl.markReadNotification);
+router.delete("/:id", authenticate, ctrl.deleteNotificationById);
 router.post("/", authenticate, authorize("admin", "manager"), ctrl.createNotification);
 
 export default router;

@@ -26,7 +26,8 @@ function navItemsForRole(role) {
       { to: "/schedules", label: "Programım" },
       { to: "/attendance", label: "Yoklama" },
       { to: "/exams", label: "Sınavlar" },
-      { to: "/announcements", label: "Duyurular" }
+      { to: "/announcements", label: "Duyurular" },
+      { to: "/settings", label: "Ayarlar" }
     ];
   }
 
@@ -36,7 +37,8 @@ function navItemsForRole(role) {
       { to: "/schedules", label: "Programım" },
       { to: "/exams", label: "Sonuçlarım" },
       { to: "/announcements", label: "Duyurular" },
-      { to: "/notifications", label: "Bildirimler" }
+      { to: "/notifications", label: "Bildirimler" },
+      { to: "/settings", label: "Ayarlar" }
     ];
   }
 
@@ -47,7 +49,8 @@ function navItemsForRole(role) {
       { to: "/attendance", label: "Devamsızlık" },
       { to: "/exams", label: "Sonuçlar" },
       { to: "/announcements", label: "Duyurular" },
-      { to: "/notifications", label: "Bildirimler" }
+      { to: "/notifications", label: "Bildirimler" },
+      { to: "/settings", label: "Ayarlar" }
     ];
   }
 

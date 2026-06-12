@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ROLES, useAuth } from "../auth/AuthContext";
+import { readStoredSession } from "../auth/storage";
 import { USE_MOCK_API } from "../services";
 
 export default function LoginPage() {
@@ -25,7 +26,9 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       await login({ email, password, role });
-      navigate(from, { replace: true });
+      const session = readStoredSession();
+      const target = session.user?.mustChangePassword ? "/change-password" : from;
+      navigate(target, { replace: true });
     } catch (err) {
       setError(err?.message || "Giriş başarısız. Lütfen tekrar deneyin.");
       console.error(err);
@@ -79,6 +82,12 @@ export default function LoginPage() {
           <button className="primary" type="submit" disabled={submitting}>
             {submitting ? "Giriliyor…" : "Giriş yap"}
           </button>
+
+          {!USE_MOCK_API ? (
+            <Link to="/forgot-password" className="muted" style={{ marginTop: 12, display: "inline-block" }}>
+              Şifremi unuttum
+            </Link>
+          ) : null}
         </form>
       </div>
     </div>

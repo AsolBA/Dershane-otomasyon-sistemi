@@ -1,4 +1,5 @@
-import { writeStoredSession } from "../../auth/storage";
+import { readStoredSession, writeStoredSession } from "../../auth/storage";
+import { DEFAULT_USER_PASSWORD } from "../../utils/passwordPolicy";
 
 export async function login({ email, password, role }) {
   const safeEmail = email?.trim() || "student@dershane.local";
@@ -14,7 +15,8 @@ export async function login({ email, password, role }) {
     role: safeRole,
     className: "12-A",
     studentId: safeRole === "STUDENT" ? "stu_1" : undefined,
-    linkedStudentId: "stu_1"
+    linkedStudentId: "stu_1",
+    mustChangePassword: password === DEFAULT_USER_PASSWORD
   };
 
   await writeStoredSession({ accessToken, refreshToken, user });
@@ -23,4 +25,15 @@ export async function login({ email, password, role }) {
 
 export async function logout() {
   return { ok: true };
+}
+
+export async function forgotPassword() {
+  return { submitted: true };
+}
+
+export async function changePassword() {
+  const session = await readStoredSession();
+  const user = { ...session.user, mustChangePassword: false };
+  await writeStoredSession({ ...session, user });
+  return { user };
 }

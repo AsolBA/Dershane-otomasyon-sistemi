@@ -14,7 +14,7 @@ import { ROLES, useAuth } from "../auth/AuthContext";
 import { USE_MOCK_API } from "../services";
 import { colors, radius, shadow, spacing } from "../theme";
 
-export default function LoginScreen() {
+export default function LoginScreen({ navigation }) {
   const { login } = useAuth();
   const [email, setEmail] = useState("mehmet.student@dershane.local");
   const [password, setPassword] = useState("");
@@ -87,6 +87,12 @@ export default function LoginScreen() {
           <Pressable style={[styles.button, loading && styles.buttonDisabled]} onPress={onSubmit} disabled={loading}>
             {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Giriş yap</Text>}
           </Pressable>
+
+          {!USE_MOCK_API ? (
+            <Pressable style={styles.linkBtn} onPress={() => navigation.navigate("ForgotPassword")}>
+              <Text style={styles.linkText}>Şifremi unuttum</Text>
+            </Pressable>
+          ) : null}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -163,5 +169,7 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: { opacity: 0.7 },
   buttonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  linkBtn: { marginTop: spacing.md, alignItems: "center", paddingVertical: 8 },
+  linkText: { color: colors.primary, fontWeight: "600" },
   error: { color: colors.danger, marginTop: spacing.sm, fontSize: 13 }
 });

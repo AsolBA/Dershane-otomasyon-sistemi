@@ -1,6 +1,13 @@
-import { writeStoredSession, clearStoredSession } from "../../auth/storage.js";
+import { readStoredSession, writeStoredSession, clearStoredSession } from "../../auth/storage.js";
 import { apiRequest } from "../httpClient.js";
 import { apiRoleToUi } from "../roleMap.js";
+
+export async function forgotPassword({ email }) {
+  return apiRequest("/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email })
+  });
+}
 
 export async function login({ email, password }) {
   const data = await apiRequest("/auth/login", {
@@ -19,7 +26,8 @@ export async function login({ email, password }) {
     role: apiRoleToUi(u.role),
     studentId: u.studentId != null ? String(u.studentId) : undefined,
     className: u.className || "",
-    linkedStudentId: u.linkedStudentId != null ? String(u.linkedStudentId) : undefined
+    linkedStudentId: u.linkedStudentId != null ? String(u.linkedStudentId) : undefined,
+    mustChangePassword: Boolean(u.mustChangePassword ?? u.must_change_password)
   };
 
   writeStoredSession({
@@ -29,6 +37,40 @@ export async function login({ email, password }) {
   });
 
   return { accessToken: data.accessToken, refreshToken: data.refreshToken, user };
+}
+
+function mapApiUser(u, fallbackEmail = "") {
+  return {
+    id: String(u.id ?? ""),
+    email: u.email ?? fallbackEmail,
+    name:
+      u.name ||
+      u.fullName ||
+      `${u.firstName || u.first_name || ""} ${u.lastName || u.last_name || ""}`.trim(),
+    role: apiRoleToUi(u.role),
+    studentId: u.studentId != null ? String(u.studentId) : undefined,
+    className: u.className || "",
+    linkedStudentId: u.linkedStudentId != null ? String(u.linkedStudentId) : undefined,
+    mustChangePassword: Boolean(u.mustChangePassword ?? u.must_change_password)
+  };
+}
+
+export async function changePassword({ currentPassword, newPassword }) {
+  const data = await apiRequest("/auth/change-password", {
+    method: "POST",
+    body: JSON.stringify({ currentPassword, newPassword })
+  });
+
+  const session = readStoredSession();
+  const user = data.user ? mapApiUser(data.user, session.user?.email) : session.user;
+
+  writeStoredSession({
+    accessToken: session.accessToken,
+    refreshToken: session.refreshToken,
+    user
+  });
+
+  return { user };
 }
 
 export async function logout() {

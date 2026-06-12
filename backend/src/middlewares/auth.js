@@ -7,11 +7,16 @@ import { query } from "../db.js";
 import { AppError } from "../utils/app-error.js";
 import { verifyAccessToken } from "../utils/tokens.js";
 
+function isPasswordChangeExempt(req) {
+  const path = String(req.originalUrl || "").split("?")[0];
+  return path === "/api/auth/change-password" || path === "/api/auth/logout";
+}
+
 async function loadUserFromAccessToken(token) {
   const payload = verifyAccessToken(token);
 
     const userResult = await query(
-      `SELECT u.id, u.role_id, u.email, u.first_name, u.last_name, u.is_active, r.name AS role_name
+      `SELECT u.id, u.role_id, u.email, u.first_name, u.last_name, u.is_active, u.must_change_password, r.name AS role_name
        FROM users u
        JOIN roles r ON r.id = u.role_id
        WHERE u.id = $1`,
@@ -29,6 +34,7 @@ async function loadUserFromAccessToken(token) {
     role: user.role_name,
     email: user.email,
     fullName: `${user.first_name} ${user.last_name}`.trim(),
+    mustChangePassword: Boolean(user.must_change_password),
   };
 }
 
@@ -49,6 +55,9 @@ export async function authenticate(req, _res, next) {
       throw new AppError(401, "AUTH_UNAUTHORIZED", "Gecersiz veya eksik access token.");
     }
     req.user = await loadUserFromAccessToken(authorization.split(" ")[1]);
+    if (req.user.mustChangePassword && !isPasswordChangeExempt(req)) {
+      throw new AppError(403, "PASSWORD_CHANGE_REQUIRED", "Ilk giris icin sifrenizi degistirmelisiniz.");
+    }
     next();
   } catch (error) {
     handleAuthError(error, next);
@@ -66,6 +75,9 @@ export async function authenticateFlexible(req, _res, next) {
       throw new AppError(401, "AUTH_UNAUTHORIZED", "Gecersiz veya eksik access token.");
     }
     req.user = await loadUserFromAccessToken(token);
+    if (req.user.mustChangePassword && !isPasswordChangeExempt(req)) {
+      throw new AppError(403, "PASSWORD_CHANGE_REQUIRED", "Ilk giris icin sifrenizi degistirmelisiniz.");
+    }
     next();
   } catch (error) {
     handleAuthError(error, next);

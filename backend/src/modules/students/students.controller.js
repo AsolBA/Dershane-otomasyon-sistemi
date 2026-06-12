@@ -7,6 +7,7 @@ import { asyncHandler } from "../../utils/async-handler.js";
 import { sendSuccess } from "../../utils/api-response.js";
 import { AppError } from "../../utils/app-error.js";
 import { parseId, optionalBool, parsePagination } from "../../utils/query-params.js";
+import { decryptLoginPassword } from "../../utils/login-password-storage.js";
 import * as studentsService from "./students.service.js";
 
 async function assertCanViewStudent(req, studentId) {
@@ -33,6 +34,17 @@ async function assertCanViewStudent(req, studentId) {
   throw new AppError(403, "AUTH_FORBIDDEN", "Bu islem icin yetkiniz yok.");
 }
 
+function attachAdminLoginPasswords(student, role) {
+  const payload = { ...student };
+  if (["admin", "manager"].includes(role)) {
+    payload.loginPassword = decryptLoginPassword(student.login_password_enc);
+    payload.parentLoginPassword = decryptLoginPassword(student.parent_login_password_enc);
+  }
+  delete payload.login_password_enc;
+  delete payload.parent_login_password_enc;
+  return payload;
+}
+
 export const list = asyncHandler(async (req, res) => {
   const { page, limit, offset } = parsePagination(req.query);
   const filters = {
@@ -57,7 +69,7 @@ export const getById = asyncHandler(async (req, res) => {
   const id = parseId(req.params.id, "studentId");
   await assertCanViewStudent(req, id);
   const student = await studentsService.getStudentById(id);
-  return sendSuccess(res, student);
+  return sendSuccess(res, attachAdminLoginPasswords(student, req.user.role));
 });
 
 export const create = asyncHandler(async (req, res) => {
@@ -66,13 +78,13 @@ export const create = asyncHandler(async (req, res) => {
     throw new AppError(400, "VALIDATION_ERROR", "firstName, lastName, email, studentNo zorunludur.");
   }
   const student = await studentsService.createStudent(body);
-  return sendSuccess(res, student, "Ogrenci olusturuldu.", 201);
+  return sendSuccess(res, attachAdminLoginPasswords(student, req.user.role), "Ogrenci olusturuldu.", 201);
 });
 
 export const update = asyncHandler(async (req, res) => {
   const id = parseId(req.params.id, "studentId");
   const student = await studentsService.updateStudent(id, req.body ?? {});
-  return sendSuccess(res, student, "Ogrenci guncellendi.");
+  return sendSuccess(res, attachAdminLoginPasswords(student, req.user.role), "Ogrenci guncellendi.");
 });
 
 export const addClass = asyncHandler(async (req, res) => {
@@ -87,4 +99,10 @@ export const removeClass = asyncHandler(async (req, res) => {
   const classId = parseId(req.params.classId, "classId");
   const out = await studentsService.removeStudentFromClass(classId, studentId);
   return sendSuccess(res, out, "Siniftan cikarildi.");
+});
+
+export const remove = asyncHandler(async (req, res) => {
+  const id = parseId(req.params.id, "studentId");
+  const out = await studentsService.deleteStudent(id);
+  return sendSuccess(res, out, "Ogrenci kalici olarak silindi.");
 });

@@ -21,11 +21,20 @@ export default function ScheduleScreen() {
         return;
       }
 
-      if (isParent && user?.linkedStudentId) {
-        const student = await studentsService.getById(user.linkedStudentId);
-        const cn = student.className || "";
+      if (isParent) {
+        const data = await schedulesService.list({});
+        setRows(data);
+        let cn = "";
+        if (user?.linkedStudentId) {
+          try {
+            const student = await studentsService.getById(user.linkedStudentId);
+            cn = student.className || "";
+          } catch {
+            /* devam */
+          }
+        }
+        if (!cn && data[0]?.className) cn = data[0].className;
         setClassLabel(cn);
-        setRows(cn ? await schedulesService.listForClass(cn) : []);
         return;
       }
 

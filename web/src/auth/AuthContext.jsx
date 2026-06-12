@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from "react";
-import { clearStoredSession, readStoredSession } from "./storage";
+import { clearStoredSession, readStoredSession, writeStoredSession } from "./storage";
 import { authService } from "../services";
 
 const AuthContext = createContext(null);
@@ -36,7 +36,25 @@ export function AuthProvider({ children }) {
     setAccessToken(session.accessToken);
     setRefreshToken(session.refreshToken);
     setUser(session.user);
+    return session;
   }, []);
+
+  const updateUser = useCallback((nextUser) => {
+    setUser(nextUser);
+    const session = readStoredSession();
+    writeStoredSession({ ...session, user: nextUser });
+  }, []);
+
+  const changePassword = useCallback(
+    async ({ currentPassword, newPassword }) => {
+      const result = await authService.changePassword({ currentPassword, newPassword });
+      if (result.user) {
+        updateUser(result.user);
+      }
+      return result;
+    },
+    [updateUser]
+  );
 
   const value = useMemo(
     () => ({
@@ -45,9 +63,11 @@ export function AuthProvider({ children }) {
       user,
       isAuthenticated,
       login,
-      logout
+      logout,
+      updateUser,
+      changePassword
     }),
-    [accessToken, refreshToken, user, isAuthenticated, login, logout]
+    [accessToken, refreshToken, user, isAuthenticated, login, logout, updateUser, changePassword]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

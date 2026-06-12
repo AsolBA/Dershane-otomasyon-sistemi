@@ -38,3 +38,18 @@ export const markReadAllMine = asyncHandler(async (req, res) => {
   const summary = await svc.markAllRead(req.user.id);
   return sendSuccess(res, summary);
 });
+
+export const deleteMine = asyncHandler(async (req, res) => {
+  const ids = req.body?.ids;
+  if (!Array.isArray(ids) || ids.length === 0) {
+    throw new AppError(400, "VALIDATION_ERROR", "ids dizisi zorunludur.");
+  }
+  const result = await svc.deleteNotifications(req.user.id, ids);
+  return sendSuccess(res, result, "Bildirimler silindi.");
+});
+
+export const deleteNotificationById = asyncHandler(async (req, res) => {
+  const id = parseId(req.params.id);
+  const result = await svc.deleteNotification(id, req.user.id);
+  return sendSuccess(res, result, "Bildirim silindi.");
+});

@@ -4,7 +4,10 @@
 // =============================================================================
 import { query } from "../../db.js";
 import { AppError } from "../../utils/app-error.js";
-import { comparePassword } from "../../utils/password.js";
+import { comparePassword, hashPassword } from "../../utils/password.js";
+import { validateNewPassword } from "../../utils/password-policy.js";
+import { DEFAULT_USER_PASSWORD } from "../../constants/default-password.js";
+import { encryptLoginPassword } from "../../utils/login-password-storage.js";
 import * as classesSvc from "../classes/classes.service.js";
 import * as studentsSvc from "../students/students.service.js";
 import {
@@ -29,6 +32,7 @@ function mapPublicUser(user) {
     email: user.email,
     firstName: user.first_name,
     lastName: user.last_name,
+    mustChangePassword: Boolean(user.must_change_password),
   };
 }
 
@@ -62,9 +66,19 @@ async function enrichPublicUser(user) {
   return { ...base, name };
 }
 
+/** Varsayilan sifre hâlâ kullaniliyorsa bayragi senkronize et (eski import / migration oncesi kayitlar). */
+async function syncMustChangePasswordFlag(user) {
+  const stillDefault = await comparePassword(DEFAULT_USER_PASSWORD, user.password_hash);
+  if (stillDefault && !user.must_change_password) {
+    await query(`UPDATE users SET must_change_password = true, updated_at = NOW() WHERE id = $1`, [user.id]);
+    user.must_change_password = true;
+  }
+  return user;
+}
+
 export async function loginWithEmailPassword(email, password) {
   const result = await query(
-    `SELECT u.id, u.email, u.password_hash, u.first_name, u.last_name, u.is_active, r.name AS role_name
+    `SELECT u.id, u.email, u.password_hash, u.first_name, u.last_name, u.is_active, u.must_change_password, r.name AS role_name
      FROM users u
      JOIN roles r ON r.id = u.role_id
      WHERE LOWER(u.email) = LOWER($1)`,
@@ -84,6 +98,8 @@ export async function loginWithEmailPassword(email, password) {
   if (!isValidPassword) {
     throw new AppError(401, "AUTH_INVALID_CREDENTIALS", "Email veya sifre hatali.");
   }
+
+  await syncMustChangePasswordFlag(user);
 
   const accessToken = signAccessToken(buildAccessPayload(user));
   const refreshToken = generateRefreshToken();
@@ -180,4 +196,42 @@ export async function revokeRefreshToken(rawRefreshToken) {
   if (result.rowCount === 0) {
     throw new AppError(404, "AUTH_REFRESH_TOKEN_NOT_FOUND", "Refresh token bulunamadi.");
   }
+}
+
+export async function changePassword(userId, { currentPassword, newPassword }) {
+  const policy = validateNewPassword(newPassword);
+  if (!policy.ok) {
+    throw new AppError(400, "VALIDATION_ERROR", policy.errors.join(" "));
+  }
+
+  const result = await query(`SELECT password_hash FROM users WHERE id = $1 AND is_active = true`, [userId]);
+  const row = result.rows[0];
+  if (!row) {
+    throw new AppError(404, "USER_NOT_FOUND", "Kullanici bulunamadi.");
+  }
+
+  const valid = await comparePassword(currentPassword, row.password_hash);
+  if (!valid) {
+    throw new AppError(401, "AUTH_INVALID_CREDENTIALS", "Mevcut sifre hatali.");
+  }
+
+  const sameAsCurrent = await comparePassword(newPassword, row.password_hash);
+  if (sameAsCurrent) {
+    throw new AppError(400, "VALIDATION_ERROR", "Yeni sifre mevcut sifreden farkli olmali.");
+  }
+
+  const passwordHash = await hashPassword(newPassword);
+  const loginPasswordEnc = encryptLoginPassword(newPassword);
+  await query(
+    `UPDATE users SET password_hash = $1, login_password_enc = $2, must_change_password = false, updated_at = NOW() WHERE id = $3`,
+    [passwordHash, loginPasswordEnc, userId],
+  );
+
+  const userRes = await query(
+    `SELECT u.id, u.email, u.first_name, u.last_name, u.must_change_password, r.name AS role_name
+     FROM users u JOIN roles r ON r.id = u.role_id WHERE u.id = $1`,
+    [userId],
+  );
+
+  return { user: await enrichPublicUser(userRes.rows[0]) };
 }

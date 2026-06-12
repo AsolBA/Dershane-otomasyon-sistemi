@@ -1,5 +1,6 @@
-import { writeStoredSession } from "../../auth/storage.js";
+import { writeStoredSession, readStoredSession } from "../../auth/storage.js";
 import { apiRoleToUi } from "../roleMap.js";
+import { DEFAULT_USER_PASSWORD } from "../../utils/passwordPolicy.js";
 
 const profiles = {
   ADMIN: {
@@ -42,7 +43,8 @@ export async function login({ email, password, role }) {
   const user = {
     ...profile,
     email: safeEmail,
-    role: safeRole
+    role: safeRole,
+    mustChangePassword: password === DEFAULT_USER_PASSWORD
   };
 
   writeStoredSession({ accessToken, refreshToken, user });
@@ -51,4 +53,15 @@ export async function login({ email, password, role }) {
 
 export async function logout() {
   return { ok: true };
+}
+
+export async function forgotPassword() {
+  return { submitted: true };
+}
+
+export async function changePassword({ currentPassword, newPassword }) {
+  const session = readStoredSession();
+  const user = { ...session.user, mustChangePassword: false };
+  writeStoredSession({ ...session, user });
+  return { user };
 }

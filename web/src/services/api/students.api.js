@@ -1,4 +1,5 @@
 import { apiRequest } from "../httpClient.js";
+import { buildParentLoginEmail, buildStudentLoginEmail } from "../../utils/email.js";
 import * as classesApi from "./classes.api.js";
 import { joinFullName } from "./mappers.js";
 
@@ -14,6 +15,13 @@ function splitFullName(fullName) {
   if (parts.length === 0) return { firstName: "", lastName: "" };
   if (parts.length === 1) return { firstName: parts[0], lastName: "-" };
   return { firstName: parts[0], lastName: parts.slice(1).join(" ") };
+}
+
+function applyParentNameFields(body, payload) {
+  if (payload.parentName === undefined) return;
+  const { firstName, lastName } = splitFullName(payload.parentName);
+  body.parentFirstName = firstName;
+  body.parentLastName = lastName || "-";
 }
 
 function generateStudentNo() {
@@ -49,8 +57,12 @@ function mapApiStudentToUi(row, classNameById) {
       row.parentName ??
       (joinFullName(parentFirst, parentLast) || ""),
     parentPhone: row.parent_phone ?? row.parentPhone ?? "",
+    parentEmail: row.parent_email ?? row.parentEmail ?? "",
     active: Boolean(row.is_active ?? row.isActive ?? row.active),
-    studentNo: row.student_no ?? row.studentNo ?? ""
+    studentNo: row.student_no ?? row.studentNo ?? "",
+    mustChangePassword: Boolean(row.must_change_password ?? row.mustChangePassword),
+    loginPassword: row.loginPassword ?? row.login_password ?? "",
+    parentLoginPassword: row.parentLoginPassword ?? row.parent_login_password ?? ""
   };
 }
 
@@ -68,11 +80,12 @@ async function resolveClassId(className, classes) {
 
 async function uiPayloadToApi(payload, { forUpdate = false } = {}) {
   const classes = await classesApi.list({});
-  const { firstName, lastName } = splitFullName(payload.fullName);
+  const firstName = String(payload.firstName ?? splitFullName(payload.fullName).firstName ?? "").trim();
+  const lastName = String(payload.lastName ?? splitFullName(payload.fullName).lastName ?? "").trim();
   const classId = await resolveClassId(payload.className, classes);
 
-  if (!forUpdate && (!firstName || !lastName || !payload.email)) {
-    throw new Error("Ad, e-posta ve sınıf zorunludur.");
+  if (!forUpdate && (!firstName || !lastName || lastName === "-")) {
+    throw new Error("Ad, soyad ve sınıf zorunludur.");
   }
 
   if (!forUpdate && classId == null && payload.className) {
@@ -82,7 +95,12 @@ async function uiPayloadToApi(payload, { forUpdate = false } = {}) {
   const body = {};
   if (firstName) body.firstName = firstName;
   if (lastName) body.lastName = lastName;
-  if (payload.email) body.email = payload.email;
+  if (!forUpdate) {
+    body.email = buildStudentLoginEmail(firstName, lastName);
+    if (!body.email) throw new Error("Geçerli ad ve soyad girin.");
+  } else if (payload.email) {
+    body.email = payload.email;
+  }
   if (!forUpdate) {
     body.studentNo = (payload.studentNo || "").trim() || generateStudentNo();
   } else if (payload.studentNo) {
@@ -90,9 +108,19 @@ async function uiPayloadToApi(payload, { forUpdate = false } = {}) {
   }
   if (classId != null) body.currentClassId = classId;
   if (payload.active !== undefined) body.isActive = Boolean(payload.active);
-  if (payload.parentId !== undefined) {
-    const raw = String(payload.parentId ?? "").trim();
-    body.parentId = raw ? Number(raw) : null;
+  if (!forUpdate) {
+    body.parentEmail = buildParentLoginEmail(firstName, lastName);
+    body.parentPhone = String(payload.parentPhone ?? "").trim() || null;
+    if (!body.parentEmail) throw new Error("Geçerli ad ve soyad girin.");
+    if (!String(payload.parentName ?? "").trim()) throw new Error("Veli adı zorunludur.");
+    applyParentNameFields(body, payload);
+  } else {
+    if (payload.parentPhone !== undefined) {
+      body.parentPhone = String(payload.parentPhone ?? "").trim() || null;
+    }
+    body.parentEmail =
+      String(payload.parentEmail ?? "").trim() || buildParentLoginEmail(firstName, lastName) || undefined;
+    applyParentNameFields(body, payload);
   }
 
   return body;
@@ -130,8 +158,5 @@ export async function update(id, payload) {
 }
 
 export async function remove(id) {
-  return apiRequest(`/students/${id}`, {
-    method: "PATCH",
-    body: JSON.stringify({ isActive: false })
-  });
+  return apiRequest(`/students/${id}`, { method: "DELETE" });
 }

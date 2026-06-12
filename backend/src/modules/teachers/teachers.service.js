@@ -1,6 +1,8 @@
 import { query, withTransaction } from "../../db.js";
 import { AppError } from "../../utils/app-error.js";
 import { hashPassword } from "../../utils/password.js";
+import { DEFAULT_USER_PASSWORD } from "../../constants/default-password.js";
+import { encryptLoginPassword } from "../../utils/login-password-storage.js";
 
 export async function getTeacherIdByUserId(userId) {
   const r = await query(`SELECT id FROM teachers WHERE user_id = $1`, [userId]);
@@ -30,7 +32,8 @@ export async function listTeachers(pagination, search, { isActive } = {}) {
   params.push(pagination.limit, pagination.offset);
   const rows = await query(
     `
-    SELECT t.id, t.branch, t.user_id, u.first_name, u.last_name, u.email, u.phone, u.is_active
+    SELECT t.id, t.branch, t.user_id, u.first_name, u.last_name, u.email, u.phone, u.is_active,
+           u.login_password_enc, u.must_change_password
     FROM teachers t
     JOIN users u ON u.id = t.user_id
     WHERE ${whereClause}
@@ -49,7 +52,8 @@ export async function listTeachers(pagination, search, { isActive } = {}) {
 export async function getTeacherById(id) {
   const r = await query(
     `
-    SELECT t.id, t.branch, t.user_id, u.first_name, u.last_name, u.email, u.phone, u.is_active
+    SELECT t.id, t.branch, t.user_id, u.first_name, u.last_name, u.email, u.phone, u.is_active,
+           u.login_password_enc, u.must_change_password
     FROM teachers t
     JOIN users u ON u.id = t.user_id
     WHERE t.id = $1`,
@@ -60,7 +64,9 @@ export async function getTeacherById(id) {
 }
 
 export async function createTeacher(payload) {
-  const passwordHash = await hashPassword(payload.password ?? "ChangeMe123!");
+  const pwd = payload.password ?? DEFAULT_USER_PASSWORD;
+  const passwordHash = await hashPassword(pwd);
+  const loginPasswordEnc = encryptLoginPassword(pwd);
 
   const teacherId = await withTransaction(async (client) => {
     const roleRes = await client.query(`SELECT id FROM roles WHERE name = 'teacher'`);
@@ -70,8 +76,8 @@ export async function createTeacher(payload) {
     let userRow;
     try {
       userRow = await client.query(
-        `INSERT INTO users (role_id, first_name, last_name, email, phone, password_hash, is_active)
-         VALUES ($1,$2,$3,$4,$5,$6,true) RETURNING id`,
+        `INSERT INTO users (role_id, first_name, last_name, email, phone, password_hash, is_active, must_change_password, login_password_enc)
+         VALUES ($1,$2,$3,$4,$5,$6,true,true,$7) RETURNING id`,
         [
           roleId,
           payload.firstName,
@@ -79,6 +85,7 @@ export async function createTeacher(payload) {
           payload.email.trim().toLowerCase(),
           payload.phone ?? null,
           passwordHash,
+          loginPasswordEnc,
         ],
       );
     } catch (e) {

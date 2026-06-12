@@ -45,6 +45,19 @@ export const list = asyncHandler(async (req, res) => {
     filters.classId = st.current_class_id ?? -1;
   }
 
+  if (req.user.role === "parent") {
+    const pid = await studentsSvc.getParentIdByUserId(req.user.id);
+    if (!pid) {
+      return sendSuccess(res, { items: [], total: 0, page, limit });
+    }
+    const children = await studentsSvc.listStudents({ parentId: pid, isActive: true }, { page: 1, limit: 1, offset: 0 });
+    const child = children.items[0];
+    if (!child?.current_class_id) {
+      return sendSuccess(res, { items: [], total: 0, page, limit });
+    }
+    filters.classId = child.current_class_id;
+  }
+
   const data = await svc.listSchedules(filters, { page, limit, offset });
   return sendSuccess(res, data);
 });

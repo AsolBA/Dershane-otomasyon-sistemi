@@ -1,10 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { coursesService, teachersService } from "../services";
 import { mergeTeacherBranches } from "../utils/branches";
-import { loginEmailError, normalizeEmail } from "../utils/email";
+import { buildTeacherLoginEmail } from "../utils/email";
+
+function splitTeacherName(fullName) {
+  const parts = String(fullName || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (parts.length === 0) return { firstName: "", lastName: "" };
+  if (parts.length === 1) return { firstName: parts[0], lastName: "" };
+  return { firstName: parts[0], lastName: parts.slice(1).join(" ") };
+}
+
+const readOnlyInputStyle = { background: "#f8fafc", color: "var(--muted)" };
 
 const emptyForm = {
-  fullName: "",
+  firstName: "",
+  lastName: "",
   email: "",
   branch: "",
   phone: "",
@@ -21,10 +34,17 @@ export default function TeachersPage() {
   const [form, setForm] = useState(emptyForm);
   const [showForm, setShowForm] = useState(false);
   const [courses, setCourses] = useState([]);
+  const [showTeacherPassword, setShowTeacherPassword] = useState(false);
+  const [teacherLoginPassword, setTeacherLoginPassword] = useState("");
 
   const branchOptions = useMemo(
     () => mergeTeacherBranches({ courses, teachers: rows }),
     [courses, rows]
+  );
+
+  const generatedEmail = useMemo(
+    () => buildTeacherLoginEmail(form.firstName, form.lastName),
+    [form.firstName, form.lastName]
   );
 
   const reload = useCallback(async () => {
@@ -49,17 +69,34 @@ export default function TeachersPage() {
   function openCreate() {
     setEditingId(null);
     setForm(emptyForm);
+    setTeacherLoginPassword("");
+    setShowTeacherPassword(false);
     setShowForm(true);
   }
 
-  function openEdit(row) {
-    setEditingId(row.id);
+  async function openEdit(row) {
+    let record = row;
+    try {
+      record = { ...row, ...(await teachersService.getById(row.id)) };
+    } catch {
+      /* listeden devam */
+    }
+
+    const { firstName, lastName } =
+      record.firstName || record.lastName
+        ? { firstName: record.firstName || "", lastName: record.lastName || "" }
+        : splitTeacherName(record.fullName);
+
+    setEditingId(record.id);
+    setTeacherLoginPassword(record.loginPassword || "");
+    setShowTeacherPassword(false);
     setForm({
-      fullName: row.fullName,
-      email: row.email,
-      branch: row.branch,
-      phone: row.phone,
-      active: Boolean(row.active)
+      firstName,
+      lastName,
+      email: record.email || "",
+      branch: record.branch,
+      phone: record.phone,
+      active: Boolean(record.active)
     });
     setShowForm(true);
   }
@@ -68,25 +105,32 @@ export default function TeachersPage() {
     setShowForm(false);
     setEditingId(null);
     setForm(emptyForm);
+    setTeacherLoginPassword("");
+    setShowTeacherPassword(false);
   }
 
   async function save() {
     const payload = {
-      fullName: form.fullName.trim(),
-      email: normalizeEmail(form.email),
+      firstName: form.firstName.trim(),
+      lastName: form.lastName.trim(),
+      email: editingId ? form.email.trim() : generatedEmail,
       branch: form.branch.trim(),
       phone: form.phone.trim(),
       active: Boolean(form.active)
     };
 
-    const emailErr = loginEmailError(payload.email);
-    if (emailErr) {
-      alert(emailErr);
+    if (!payload.firstName || !payload.lastName || !payload.branch) {
+      alert("Ad, soyad ve branş zorunludur.");
       return;
     }
 
-    if (!payload.fullName || !payload.email || !payload.branch || !branchOptions.includes(payload.branch)) {
-      alert("Ad, e-posta ve branş zorunludur.");
+    if (!branchOptions.includes(payload.branch)) {
+      alert("Geçerli bir branş seçin.");
+      return;
+    }
+
+    if (!editingId && !generatedEmail) {
+      alert("Geçerli ad ve soyad girerek e-posta oluşturulmalı.");
       return;
     }
 
@@ -195,7 +239,9 @@ export default function TeachersPage() {
             <div>
               <h2 style={{ margin: 0 }}>{editingId ? "Öğretmen düzenle" : "Yeni öğretmen"}</h2>
               <p className="muted" style={{ margin: "6px 0 0" }}>
-                Branş alani UML’deki Teacher.branch ile uyumlu basit bir karsilik.
+                {editingId
+                  ? "Öğretmen bilgilerini güncelleyin."
+                  : "Ad ve soyad girildiğinde öğretmen e-postası otomatik oluşturulur."}
               </p>
             </div>
             <div className="toolbar">
@@ -210,12 +256,29 @@ export default function TeachersPage() {
 
           <div className="form-grid">
             <label>
-              Ad Soyad
-              <input value={form.fullName} onChange={(e) => setForm((p) => ({ ...p, fullName: e.target.value }))} />
+              Ad
+              <input
+                value={form.firstName}
+                onChange={(e) => setForm((p) => ({ ...p, firstName: e.target.value }))}
+                placeholder="Burak"
+              />
             </label>
             <label>
-              E-posta
-              <input value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} />
+              Soyad
+              <input
+                value={form.lastName}
+                onChange={(e) => setForm((p) => ({ ...p, lastName: e.target.value }))}
+                placeholder="Polat"
+              />
+            </label>
+            <label>
+              Öğretmen e-posta
+              <input
+                value={editingId ? form.email : generatedEmail}
+                readOnly
+                style={readOnlyInputStyle}
+                placeholder="adsoyad.teacher@dershane.local"
+              />
             </label>
             <label>
               Branş
@@ -239,6 +302,40 @@ export default function TeachersPage() {
                 <option value="false">Pasif</option>
               </select>
             </label>
+            {editingId ? (
+              <label>
+                Öğretmen şifresi
+                <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 6 }}>
+                  <input
+                    readOnly
+                    value={
+                      teacherLoginPassword
+                        ? showTeacherPassword
+                          ? teacherLoginPassword
+                          : "••••••••••••"
+                        : "—"
+                    }
+                    style={{ ...readOnlyInputStyle, flex: 1, fontFamily: teacherLoginPassword ? "monospace" : undefined }}
+                  />
+                  {teacherLoginPassword ? (
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() => setShowTeacherPassword((v) => !v)}
+                      title={showTeacherPassword ? "Gizle" : "Göster"}
+                      aria-label={showTeacherPassword ? "Şifreyi gizle" : "Şifreyi göster"}
+                    >
+                      {showTeacherPassword ? "🙈" : "👁"}
+                    </button>
+                  ) : null}
+                </div>
+                {!teacherLoginPassword ? (
+                  <span className="muted" style={{ fontSize: 12 }}>
+                    Kayıtlı şifre yok. Öğretmen şifresini bir kez değiştirdikten sonra burada görünür.
+                  </span>
+                ) : null}
+              </label>
+            ) : null}
           </div>
         </div>
       ) : null}

@@ -9,7 +9,9 @@ import {
   loginWithEmailPassword,
   refreshAuthToken,
   revokeRefreshToken,
+  changePassword as changePasswordService,
 } from "./auth.service.js";
+import { requestPasswordReset } from "../password-reset/password-reset.service.js";
 
 export const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
@@ -39,4 +41,26 @@ export const logout = asyncHandler(async (req, res) => {
 
   await revokeRefreshToken(refreshToken);
   return sendSuccess(res, { loggedOut: true }, "Cikis basarili.");
+});
+
+export const changePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body ?? {};
+  if (!currentPassword || !newPassword) {
+    throw new AppError(400, "VALIDATION_ERROR", "currentPassword ve newPassword zorunludur.");
+  }
+  const result = await changePasswordService(req.user.id, { currentPassword, newPassword });
+  return sendSuccess(res, result, "Sifre guncellendi.");
+});
+
+export const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body ?? {};
+  if (!email) {
+    throw new AppError(400, "VALIDATION_ERROR", "email zorunludur.");
+  }
+  await requestPasswordReset(email);
+  return sendSuccess(
+    res,
+    { submitted: true },
+    "Talebiniz alindi. Yonetici onayindan sonra varsayilan sifre ile giris yapabilirsiniz.",
+  );
 });

@@ -2,7 +2,17 @@ import { asyncHandler } from "../../utils/async-handler.js";
 import { sendSuccess } from "../../utils/api-response.js";
 import { AppError } from "../../utils/app-error.js";
 import { optionalBool, parseId, parsePagination } from "../../utils/query-params.js";
+import { decryptLoginPassword } from "../../utils/login-password-storage.js";
 import * as svc from "./teachers.service.js";
+
+function attachAdminLoginPasswords(teacher, role) {
+  const payload = { ...teacher };
+  if (["admin", "manager"].includes(role)) {
+    payload.loginPassword = decryptLoginPassword(teacher.login_password_enc);
+  }
+  delete payload.login_password_enc;
+  return payload;
+}
 
 export const list = asyncHandler(async (req, res) => {
   const { page, limit, offset } = parsePagination(req.query);
@@ -31,7 +41,7 @@ export const getById = asyncHandler(async (req, res) => {
       throw new AppError(403, "AUTH_FORBIDDEN", "Sadece kendi profilinizi gorebilirsiniz.");
     }
   }
-  return sendSuccess(res, await svc.getTeacherById(id));
+  return sendSuccess(res, attachAdminLoginPasswords(await svc.getTeacherById(id), req.user.role));
 });
 
 export const create = asyncHandler(async (req, res) => {
@@ -39,12 +49,14 @@ export const create = asyncHandler(async (req, res) => {
   if (!b.firstName || !b.lastName || !b.email || !b.branch) {
     throw new AppError(400, "VALIDATION_ERROR", "firstName, lastName, email, branch zorunludur.");
   }
-  return sendSuccess(res, await svc.createTeacher(b), "Ogretmen olusturuldu.", 201);
+  const teacher = await svc.createTeacher(b);
+  return sendSuccess(res, attachAdminLoginPasswords(teacher, req.user.role), "Ogretmen olusturuldu.", 201);
 });
 
 export const update = asyncHandler(async (req, res) => {
   const id = parseId(req.params.id, "teacherId");
-  return sendSuccess(res, await svc.updateTeacher(id, req.body ?? {}), "Ogretmen guncellendi.");
+  const teacher = await svc.updateTeacher(id, req.body ?? {});
+  return sendSuccess(res, attachAdminLoginPasswords(teacher, req.user.role), "Ogretmen guncellendi.");
 });
 
 export const listCourses = asyncHandler(async (req, res) => {

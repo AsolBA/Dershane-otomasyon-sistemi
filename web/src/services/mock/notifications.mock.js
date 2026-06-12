@@ -23,3 +23,22 @@ export async function markRead(id) {
 export async function markAllRead() {
   getStore().notifications = getStore().notifications.map((r) => ({ ...r, read: true }));
 }
+
+export async function approvePasswordReset() {
+  return { approved: true };
+}
+
+export async function rejectPasswordReset() {
+  return { rejected: true };
+}
+
+export async function remove(id) {
+  const store = getStore();
+  store.notifications = store.notifications.filter((r) => String(r.id) !== String(id));
+}
+
+export async function removeMany(ids) {
+  const set = new Set((ids ?? []).map(String));
+  const store = getStore();
+  store.notifications = store.notifications.filter((r) => !set.has(String(r.id)));
+}

@@ -16,6 +16,7 @@ import attendanceRoutes from "./modules/attendance/attendance.routes.js";
 import examsRoutes from "./modules/exams/exams.routes.js";
 import announcementsRoutes from "./modules/announcements/announcements.routes.js";
 import notificationsRoutes from "./modules/notifications/notifications.routes.js";
+import passwordResetRoutes from "./modules/password-reset/password-reset.routes.js";
 import { authenticate, authorize } from "./middlewares/auth.js";
 import { sendSuccess } from "./utils/api-response.js";
 
@@ -33,6 +34,7 @@ router.use("/attendance", attendanceRoutes);
 router.use("/exams", examsRoutes);
 router.use("/announcements", announcementsRoutes);
 router.use("/notifications", notificationsRoutes);
+router.use("/password-reset-requests", passwordResetRoutes);
 
 router.get("/me", authenticate, (req, res) => {
   return sendSuccess(res, { user: req.user });

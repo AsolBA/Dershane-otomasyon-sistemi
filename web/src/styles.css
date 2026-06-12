@@ -556,6 +556,55 @@ tbody tr:hover {
   padding: 20px 22px;
 }
 
+.modal-card--wide {
+  width: min(1100px, 100%);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.toolbar-actions-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 168px;
+}
+
+.toolbar-actions-stack .btn {
+  width: 100%;
+  justify-content: center;
+}
+
+.import-preview-wrap {
+  max-height: 360px;
+}
+
+.import-preview-table {
+  font-size: 13px;
+}
+
+.import-preview-table th,
+.import-preview-table td {
+  vertical-align: top;
+}
+
+.import-row-invalid {
+  background: #fff7f7;
+}
+
+.import-failures {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
 .modal-header {
   display: flex;
   justify-content: space-between;

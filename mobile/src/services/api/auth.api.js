@@ -16,8 +16,16 @@ function mapLoginUser(data, email) {
     role: apiRoleToUi(u.role),
     studentId: u.studentId != null ? String(u.studentId) : undefined,
     className: u.className || "",
-    linkedStudentId: u.linkedStudentId != null ? String(u.linkedStudentId) : undefined
+    linkedStudentId: u.linkedStudentId != null ? String(u.linkedStudentId) : undefined,
+    mustChangePassword: Boolean(u.mustChangePassword ?? u.must_change_password)
   };
+}
+
+export async function forgotPassword({ email }) {
+  return apiRequest("/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email })
+  });
 }
 
 export async function login({ email, password }) {
@@ -35,6 +43,38 @@ export async function login({ email, password }) {
   });
 
   return { accessToken: data.accessToken, refreshToken: data.refreshToken, user };
+}
+
+export async function changePassword({ currentPassword, newPassword }) {
+  const data = await apiRequest("/auth/change-password", {
+    method: "POST",
+    body: JSON.stringify({ currentPassword, newPassword })
+  });
+
+  const session = await readStoredSession();
+  const u = data.user ?? {};
+  const user = {
+    id: String(u.id ?? session.user?.id ?? ""),
+    email: u.email ?? session.user?.email,
+    name:
+      u.name ||
+      joinFullName(u.firstName || u.first_name, u.lastName || u.last_name) ||
+      session.user?.name,
+    role: apiRoleToUi(u.role ?? session.user?.role),
+    studentId: u.studentId != null ? String(u.studentId) : session.user?.studentId,
+    className: u.className || session.user?.className || "",
+    linkedStudentId:
+      u.linkedStudentId != null ? String(u.linkedStudentId) : session.user?.linkedStudentId,
+    mustChangePassword: Boolean(u.mustChangePassword ?? u.must_change_password)
+  };
+
+  await writeStoredSession({
+    accessToken: session.accessToken,
+    refreshToken: session.refreshToken,
+    user
+  });
+
+  return { user };
 }
 
 export async function logout() {
