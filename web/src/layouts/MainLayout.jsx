@@ -35,6 +35,7 @@ function navItemsForRole(role) {
     return [
       ...base,
       { to: "/schedules", label: "Programım" },
+      { to: "/attendance", label: "Devamsızlık" },
       { to: "/exams", label: "Sonuçlarım" },
       { to: "/announcements", label: "Duyurular" },
       { to: "/notifications", label: "Bildirimler" },

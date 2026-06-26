@@ -19,7 +19,8 @@ const profiles = {
     email: "burak@teacher.local"
   },
   STUDENT: {
-    id: "stu_1",
+    id: "usr_stu_1",
+    studentId: "stu_1",
     name: "Ayşe Yılmaz",
     email: "ayse@student.local",
     className: "12-A"

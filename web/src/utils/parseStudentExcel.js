@@ -1,5 +1,33 @@
 import * as XLSX from "xlsx";
-import { buildParentLoginEmail, buildStudentLoginEmail } from "./email.js";
+import { buildParentLoginEmail, buildStudentLoginEmail, normalizeEmail } from "./email.js";
+
+export function markStudentImportDuplicates(rows, existingStudentEmails = new Set()) {
+  const seenInFile = new Map();
+
+  return rows.map((row) => {
+    const email = normalizeEmail(row.studentEmail);
+    const errors = [...row.errors];
+
+    if (email) {
+      const firstRow = seenInFile.get(email);
+      if (firstRow != null) {
+        errors.push(`Dosyada tekrar ediyor (satır ${firstRow} ile aynı öğrenci).`);
+      } else {
+        seenInFile.set(email, row.rowNumber);
+      }
+
+      if (existingStudentEmails.has(email)) {
+        errors.push("Bu öğrenci e-postası sistemde zaten kayıtlı.");
+      }
+    }
+
+    return {
+      ...row,
+      errors,
+      valid: errors.length === 0
+    };
+  });
+}
 
 const FIELD_ALIASES = {
   firstName: ["ogrenci ad", "ad", "first name", "firstname", "isim"],
@@ -35,7 +63,7 @@ function cellValue(row, index) {
   return String(raw).trim();
 }
 
-export async function parseStudentExcelFile(file, { knownClasses = [] } = {}) {
+export async function parseStudentExcelFile(file, { knownClasses = [], existingStudentEmails = new Set() } = {}) {
   const buffer = await file.arrayBuffer();
   const workbook = XLSX.read(buffer, { type: "array" });
   const sheetName = workbook.SheetNames[0];
@@ -109,5 +137,5 @@ export async function parseStudentExcelFile(file, { knownClasses = [] } = {}) {
   }
 
   if (!rows.length) throw new Error("İçe aktarılacak öğrenci satırı bulunamadı.");
-  return rows;
+  return markStudentImportDuplicates(rows, existingStudentEmails);
 }

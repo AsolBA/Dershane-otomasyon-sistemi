@@ -22,7 +22,7 @@ function todayISO() {
 
 export default function AttendancePage() {
   const { user } = useAuth();
-  if (user?.role === ROLES.PARENT) {
+  if (user?.role === ROLES.PARENT || user?.role === ROLES.STUDENT) {
     return <ParentAttendanceReadOnly />;
   }
   return <AttendanceAdminPage />;
@@ -32,7 +32,7 @@ function AttendanceAdminPage() {
   const [schedules, setSchedules] = useState([]);
   const [scheduleId, setScheduleId] = useState("");
   const [date, setDate] = useState(todayISO());
-  const [allStudents, setAllStudents] = useState([]);
+  const [studentsForClass, setStudentsForClass] = useState([]);
 
   const [rows, setRows] = useState([]);
   const [teachersRef, setTeachersRef] = useState([]);
@@ -40,13 +40,11 @@ function AttendanceAdminPage() {
   useEffect(() => {
     (async () => {
       try {
-        const [sch, stu, tch] = await Promise.all([
+        const [sch, tch] = await Promise.all([
           schedulesService.list(),
-          studentsService.list({ onlyActive: true }),
           teachersService.list({ onlyActive: true })
         ]);
         setSchedules(sch);
-        setAllStudents(stu);
         setTeachersRef(tch);
         if (sch[0]?.id != null) setScheduleId(String(sch[0].id));
       } catch (err) {
@@ -66,10 +64,31 @@ function AttendanceAdminPage() {
     [schedules, scheduleId]
   );
 
-  const studentsForClass = useMemo(() => {
-    if (!schedule) return [];
-    return allStudents.filter((s) => s.className === schedule.className);
-  }, [schedule, allStudents]);
+  useEffect(() => {
+    if (!schedule?.classId) {
+      setStudentsForClass([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const stu = await studentsService.list({
+          onlyActive: true,
+          classId: schedule.classId,
+          limit: 100
+        });
+        if (!cancelled) setStudentsForClass(stu);
+      } catch (err) {
+        if (!cancelled) {
+          alert(err?.message || "Sınıf öğrencileri yüklenemedi.");
+          setStudentsForClass([]);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [schedule]);
 
   const loadAttendance = useCallback(async () => {
     if (!schedule) {

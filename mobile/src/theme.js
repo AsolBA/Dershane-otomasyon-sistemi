@@ -102,8 +102,9 @@ export const tabScreenOptions = {
     borderTopColor: colors.border,
     borderTopWidth: 1,
     height: 58,
-    paddingBottom: 6,
-    paddingTop: 6
+    paddingBottom: 4,
+    paddingTop: 6,
+    marginBottom: 16
   },
   tabBarActiveTintColor: colors.primary,
   tabBarInactiveTintColor: colors.muted,

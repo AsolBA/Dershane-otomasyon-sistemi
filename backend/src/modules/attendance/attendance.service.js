@@ -79,9 +79,14 @@ export async function listAttendance(filters, pagination) {
   const rows = await query(
     `
     SELECT a.id, a.student_id, a.schedule_id, a.attendance_date, a.status, a.note, a.marked_by, a.created_at,
-           sc.class_id, sc.course_id, sc.teacher_id
+           sc.class_id, sc.course_id, sc.teacher_id,
+           co.name AS course_name,
+           tu.first_name AS teacher_first_name, tu.last_name AS teacher_last_name
     FROM attendance a
     JOIN schedules sc ON sc.id = a.schedule_id
+    JOIN courses co ON co.id = sc.course_id
+    JOIN teachers te ON te.id = sc.teacher_id
+    JOIN users tu ON tu.id = te.user_id
     WHERE ${whereClause}
     ORDER BY a.attendance_date DESC, a.id DESC
     LIMIT $${limitIdx} OFFSET $${offsetIdx}`,

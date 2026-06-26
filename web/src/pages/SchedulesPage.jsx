@@ -5,7 +5,7 @@ import { classesService, coursesService, schedulesService, teachersService } fro
 import { findScheduleConflicts, normalizeTimeInput } from "../utils/scheduleConflict";
 import { formatDay } from "../utils/labels";
 import { CLASSROOMS } from "../utils/constants";
-import { mergeTeacherBranches } from "../utils/branches";
+import { mergeTeacherBranches, coursesForBranch } from "../utils/branches";
 
 const emptyForm = {
   day: "Monday",
@@ -88,6 +88,21 @@ function ScheduleAdminPage() {
     return teachers.filter((t) => t.branch === form.branch);
   }, [teachers, form.branch]);
 
+  const selectedTeacher = useMemo(
+    () => teachers.find((t) => String(t.id) === String(form.teacherId)) || null,
+    [teachers, form.teacherId]
+  );
+
+  const filteredCourses = useMemo(() => {
+    const branch = selectedTeacher?.branch || form.branch;
+    let list = coursesForBranch(courses, branch);
+    if (form.courseId && !list.some((c) => String(c.id) === String(form.courseId))) {
+      const current = courses.find((c) => String(c.id) === String(form.courseId));
+      if (current) list = [current, ...list];
+    }
+    return list;
+  }, [courses, selectedTeacher, form.branch, form.courseId]);
+
   const teacherNameById = useMemo(() => {
     const map = new Map();
     for (const t of teachers) map.set(String(t.id), t.fullName);
@@ -116,13 +131,14 @@ function ScheduleAdminPage() {
     const refs = await loadRefs().catch(() => ({ teachers, courses, classes }));
     const defaultBranch = mergeTeacherBranches({ courses: refs.courses || courses, teachers: refs.teachers || teachers })[0] || "";
     const branchTeachers = (refs.teachers || teachers).filter((t) => t.branch === defaultBranch);
+    const branchCourses = coursesForBranch(refs.courses || courses, defaultBranch);
     const classList = refs.classes || classes;
     setForm({
       ...emptyForm,
       className: classList[0]?.name || "12-A",
       branch: defaultBranch,
       teacherId: branchTeachers[0] ? String(branchTeachers[0].id) : "",
-      courseId: (refs.courses || courses)[0] ? String((refs.courses || courses)[0].id) : ""
+      courseId: branchCourses[0] ? String(branchCourses[0].id) : ""
     });
     setShowForm(true);
   }
@@ -145,10 +161,28 @@ function ScheduleAdminPage() {
 
   function onBranchChange(branch) {
     const nextTeachers = teachers.filter((t) => t.branch === branch);
+    const nextCourses = coursesForBranch(courses, branch);
     setForm((p) => ({
       ...p,
       branch,
-      teacherId: nextTeachers[0] ? String(nextTeachers[0].id) : ""
+      teacherId: nextTeachers[0] ? String(nextTeachers[0].id) : "",
+      courseId: nextCourses[0] ? String(nextCourses[0].id) : ""
+    }));
+  }
+
+  function onTeacherChange(teacherId) {
+    const teacher = teachers.find((t) => String(t.id) === String(teacherId));
+    const branch = teacher?.branch || "";
+    const nextCourses = coursesForBranch(courses, branch);
+    setForm((p) => ({
+      ...p,
+      teacherId,
+      branch: branch || p.branch,
+      courseId: nextCourses.some((c) => String(c.id) === String(p.courseId))
+        ? p.courseId
+        : nextCourses[0]
+          ? String(nextCourses[0].id)
+          : ""
     }));
   }
 
@@ -365,7 +399,7 @@ function ScheduleAdminPage() {
             </label>
             <label>
               Öğretmen
-              <select value={form.teacherId} onChange={(e) => setForm((p) => ({ ...p, teacherId: e.target.value }))}>
+              <select value={form.teacherId} onChange={(e) => onTeacherChange(e.target.value)}>
                 {filteredTeachers.length === 0 ? (
                   <option value="">Bu branşta öğretmen yok</option>
                 ) : null}
@@ -379,7 +413,14 @@ function ScheduleAdminPage() {
             <label>
               Ders
               <select value={form.courseId} onChange={(e) => setForm((p) => ({ ...p, courseId: e.target.value }))}>
-                {courses.map((c) => (
+                {filteredCourses.length === 0 ? (
+                  <option value="">
+                    {form.branch || selectedTeacher?.branch
+                      ? "Bu branşa tanımlı ders yok"
+                      : "Önce branş veya öğretmen seçin"}
+                  </option>
+                ) : null}
+                {filteredCourses.map((c) => (
                   <option key={c.id} value={String(c.id)}>
                     {c.name} ({c.code})
                   </option>

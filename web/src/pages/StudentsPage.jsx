@@ -3,6 +3,7 @@ import StudentImportModal from "../components/StudentImportModal";
 import { classesService, studentsService } from "../services";
 import { buildParentLoginEmail, buildStudentLoginEmail } from "../utils/email";
 import { parseStudentExcelFile } from "../utils/parseStudentExcel";
+import { buildStudentListParams, sortStudentsByClassAndName } from "../utils/studentListFilters";
 
 function splitStudentName(fullName) {
   const parts = String(fullName || "")
@@ -44,6 +45,14 @@ export default function StudentsPage() {
   const [studentLoginPassword, setStudentLoginPassword] = useState("");
   const [showParentPassword, setShowParentPassword] = useState(false);
   const [parentLoginPassword, setParentLoginPassword] = useState("");
+  const [listFilter, setListFilter] = useState({ matchedClass: null, mode: "all" });
+
+  const listParams = useMemo(
+    () => buildStudentListParams({ query, onlyActive, classes }),
+    [query, onlyActive, classes]
+  );
+
+  const displayRows = useMemo(() => sortStudentsByClassAndName(rows), [rows]);
 
   const generatedEmail = useMemo(
     () => buildStudentLoginEmail(form.firstName, form.lastName),
@@ -60,14 +69,16 @@ export default function StudentsPage() {
   const reload = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await studentsService.list({ onlyActive, q: query });
+      const { params, matchedClass, mode } = listParams;
+      const data = await studentsService.list(params);
       setRows(data);
+      setListFilter({ matchedClass, mode });
     } catch (err) {
       alert(err?.message || "Liste yüklenemedi.");
     } finally {
       setLoading(false);
     }
-  }, [onlyActive, query]);
+  }, [listParams]);
 
   useEffect(() => {
     reload();
@@ -179,7 +190,8 @@ export default function StudentsPage() {
 
     try {
       const knownClasses = classes.map((c) => c.name).filter(Boolean);
-      const rows = await parseStudentExcelFile(file, { knownClasses });
+      const existingStudentEmails = await studentsService.collectExistingStudentEmails();
+      const rows = await parseStudentExcelFile(file, { knownClasses, existingStudentEmails });
       setImportFileName(file.name);
       setImportRows(rows);
     } catch (err) {
@@ -214,10 +226,19 @@ export default function StudentsPage() {
       <div className="page-header">
         <div>
           <h1>Öğrenciler</h1>
-          <p className="muted">Servis katmanı üzerinden CRUD (mock veya API).</p>
+          <p className="muted">
+            {listFilter.mode === "class" && listFilter.matchedClass
+              ? `${listFilter.matchedClass.name} sınıfı listeleniyor.`
+              : "Sınıf adı veya öğrenci adı ile arayın."}
+          </p>
         </div>
         <div className="toolbar">
-          <input className="input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Ara..." />
+          <input
+            className="input"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Öğrenci adı veya sınıf ara…"
+          />
           <label className="pill">
             <input type="checkbox" checked={onlyActive} onChange={(e) => setOnlyActive(e.target.checked)} />
             Sadece aktif
@@ -241,6 +262,12 @@ export default function StudentsPage() {
       </div>
 
       <div className="card">
+        {!loading && displayRows.length > 0 ? (
+          <p className="muted" style={{ margin: "0 0 12px", fontSize: 13 }}>
+            {displayRows.length} öğrenci listeleniyor
+            {listFilter.mode === "search" && query.trim() ? ` (“${query.trim()}” araması)` : ""}
+          </p>
+        ) : null}
         <div className="table-wrap">
           <table>
             <thead>
@@ -261,7 +288,7 @@ export default function StudentsPage() {
                 </tr>
               ) : null}
               {!loading
-                ? rows.map((r) => (
+                ? displayRows.map((r) => (
                 <tr key={r.id}>
                   <td>
                     <div style={{ fontWeight: 600 }}>{r.fullName}</div>
@@ -289,7 +316,7 @@ export default function StudentsPage() {
                 </tr>
                   ))
                 : null}
-              {!loading && rows.length === 0 ? (
+              {!loading && displayRows.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="muted">
                     Kayıt bulunamadı.

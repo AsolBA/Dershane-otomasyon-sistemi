@@ -1,5 +1,5 @@
 import { apiRequest } from "../httpClient.js";
-import { buildParentLoginEmail, buildStudentLoginEmail } from "../../utils/email.js";
+import { buildParentLoginEmail, buildStudentLoginEmail, normalizeEmail } from "../../utils/email.js";
 import * as classesApi from "./classes.api.js";
 import { joinFullName } from "./mappers.js";
 
@@ -132,10 +132,33 @@ export async function getById(id) {
   return mapApiStudentToUi(row, classNameById);
 }
 
-export async function list({ onlyActive, q } = {}) {
+export async function collectExistingStudentEmails() {
+  const emails = new Set();
+  let page = 1;
+
+  while (true) {
+    const params = new URLSearchParams({ page: String(page), limit: "100" });
+    const data = await apiRequest(`/students?${params.toString()}`);
+    const items = unwrapList(data);
+    for (const row of items) {
+      const email = normalizeEmail(row.email);
+      if (email) emails.add(email);
+    }
+
+    const total = Number(data?.total ?? items.length);
+    if (!items.length || page * 100 >= total) break;
+    page += 1;
+  }
+
+  return emails;
+}
+
+export async function list({ onlyActive, q, classId, limit } = {}) {
   const params = new URLSearchParams();
   if (onlyActive) params.set("isActive", "true");
   if (q) params.set("search", q);
+  if (classId != null && classId !== "") params.set("classId", String(classId));
+  if (limit != null) params.set("limit", String(limit));
   const [data, classNameById] = await Promise.all([
     apiRequest(`/students?${params.toString()}`),
     loadClassNameMap()

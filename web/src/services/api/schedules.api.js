@@ -40,6 +40,7 @@ function mapApiScheduleToUi(row, idToName) {
     startTime: formatTime(row.start_time ?? row.startTime),
     endTime: formatTime(row.end_time ?? row.endTime),
     className: idToName.get(classId) ?? "",
+    classId: Number.isFinite(classId) ? classId : null,
     teacherId: row.teacher_id ?? row.teacherId,
     courseId: row.course_id ?? row.courseId,
     room: row.room ?? ""

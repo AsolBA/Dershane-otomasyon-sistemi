@@ -1,5 +1,5 @@
 import { apiRequest } from "../httpClient.js";
-import { resolveClassId, unwrapList } from "./mappers.js";
+import { formatDateOnly, resolveClassId, unwrapList } from "./mappers.js";
 import * as classesApi from "./classes.api.js";
 
 async function loadClassNameMap() {
@@ -18,8 +18,9 @@ function mapApiExamToUi(row, classNameById) {
   return {
     id: row.id,
     name: row.name ?? "",
-    date: row.exam_date ?? row.examDate ?? "",
+    date: formatDateOnly(row.exam_date ?? row.examDate ?? ""),
     courseId: row.course_id ?? row.courseId,
+    classId: Number.isFinite(classId) ? classId : null,
     className: classNameById.get(classId) ?? "",
     maxScore: row.max_score ?? row.maxScore ?? 100
   };
@@ -47,7 +48,7 @@ function mapMyResultRow(row, classNameById) {
   return {
     id: row.id,
     name: row.name ?? "",
-    date: row.exam_date ?? row.examDate ?? "",
+    date: formatDateOnly(row.exam_date ?? row.examDate ?? ""),
     className: classNameById.get(classId) ?? "",
     score: row.score ?? null
   };

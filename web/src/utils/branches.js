@@ -12,3 +12,10 @@ export function mergeTeacherBranches({ courses = [], teachers = [] } = {}) {
   }
   return [...set].sort((a, b) => a.localeCompare(b, "tr"));
 }
+
+/** Branş adı ile ders adını eşleştirir (ör. Matematik öğretmeni → Matematik dersi). */
+export function coursesForBranch(courses = [], branch) {
+  const normalized = String(branch || "").trim().toLocaleLowerCase("tr");
+  if (!normalized) return [];
+  return courses.filter((c) => String(c.name || "").trim().toLocaleLowerCase("tr") === normalized);
+}

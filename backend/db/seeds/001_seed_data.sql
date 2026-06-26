@@ -1,6 +1,6 @@
 -- =============================================================================
 -- 001_seed_data.sql — Ornek (demo) veriler
--- Sunum ve test icin hazir hesaplar: admin, ogretmen, veli, ogrenci.
+-- Sunum ve test icin hazir hesaplar: admin, manager, ogretmen, veli, ogrenci.
 -- Tum sifreler seed sonrasi: Admin123!
 -- =============================================================================
 BEGIN;
@@ -21,6 +21,12 @@ WHERE r.name = 'admin'
 ON CONFLICT (email) DO NOTHING;
 
 INSERT INTO users (role_id, first_name, last_name, email, phone, password_hash)
+SELECT r.id, 'Mudur', 'Kullanici', 'mudur@dershane.local', '5550000001', 'seed_will_override'
+FROM roles r
+WHERE r.name = 'manager'
+ON CONFLICT (email) DO NOTHING;
+
+INSERT INTO users (role_id, first_name, last_name, email, phone, password_hash)
 SELECT r.id, 'Ayse', 'Yilmaz', 'ayse.teacher@dershane.local', '5551111111', 'seed_will_override'
 FROM roles r
 WHERE r.name = 'teacher'
@@ -38,10 +44,13 @@ FROM roles r
 WHERE r.name = 'student'
 ON CONFLICT (email) DO NOTHING;
 
+
+
 UPDATE users
 SET password_hash = crypt('Admin123!', gen_salt('bf', 10))
 WHERE email IN (
   'admin@dershane.local',
+  'mudur@dershane.local',
   'ayse.teacher@dershane.local',
   'fatma.parent@dershane.local',
   'mehmet.student@dershane.local'

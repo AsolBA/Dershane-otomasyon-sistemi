@@ -1,24 +1,34 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
-import { useAuth } from "../../auth/AuthContext";
+import { ROLES, useAuth } from "../../auth/AuthContext";
 import { attendanceService } from "../../services";
 import { ATTENDANCE_STATUS_LABELS } from "../../utils/labels";
 import { colors, commonStyles, radius, shadow, spacing } from "../../theme";
 
+function resolveStudentId(user) {
+  if (user?.role === ROLES.STUDENT) return user?.studentId;
+  return user?.linkedStudentId;
+}
+
+function rowKey(row) {
+  return String(row.id ?? `${row.scheduleId || "na"}__${row.date}`);
+}
+
 export default function AttendanceScreen() {
   const { user } = useAuth();
+  const studentId = resolveStudentId(user);
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const reload = useCallback(async () => {
     try {
-      const data = await attendanceService.listAttendanceForParent(user?.linkedStudentId);
+      const data = await attendanceService.listAttendanceForStudent(studentId);
       setRows(data);
     } catch (err) {
       alert(err?.message || "Devamsızlık yüklenemedi.");
     }
-  }, [user?.linkedStudentId]);
+  }, [studentId]);
 
   useEffect(() => {
     (async () => {
@@ -46,12 +56,16 @@ export default function AttendanceScreen() {
     <FlatList
       contentContainerStyle={styles.list}
       data={rows}
-      keyExtractor={(item) => item.date}
+      keyExtractor={rowKey}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       ListEmptyComponent={<Text style={commonStyles.empty}>Kayıt yok.</Text>}
       renderItem={({ item }) => (
         <View style={styles.card}>
-          <Text style={styles.date}>{item.date}</Text>
+          <View style={styles.cardMain}>
+            <Text style={styles.date}>{item.date}</Text>
+            {item.courseName ? <Text style={styles.course}>{item.courseName}</Text> : null}
+            {item.teacherName ? <Text style={styles.teacher}>{item.teacherName}</Text> : null}
+          </View>
           <StatusPill status={item.status} />
         </View>
       )}
@@ -85,8 +99,10 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     ...shadow.card
   },
+  cardMain: { flex: 1, marginRight: spacing.sm },
   date: { fontWeight: "700", color: colors.text },
-  muted: { color: colors.muted, textAlign: "center", marginTop: spacing.lg },
+  course: { marginTop: 4, fontWeight: "600", color: colors.text },
+  teacher: { marginTop: 2, color: colors.muted, fontSize: 13 },
   pill: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
   pillOk: { backgroundColor: colors.okBg },
   pillBad: { backgroundColor: colors.badBg },

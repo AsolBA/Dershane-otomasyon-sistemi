@@ -12,6 +12,14 @@ export function formatTime(value) {
   return s.length >= 5 ? s.slice(0, 5) : s;
 }
 
+export function formatDateOnly(value) {
+  if (value == null || value === "") return "";
+  const s = String(value).trim();
+  const isoDate = /^(\d{4}-\d{2}-\d{2})/.exec(s);
+  if (isoDate) return isoDate[1];
+  return s;
+}
+
 export const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 export function dayNameToNumber(day) {

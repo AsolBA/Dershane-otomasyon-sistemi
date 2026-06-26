@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { coursesService, examsService, studentsService } from "../services";
+import { classesService, coursesService, examsService, studentsService } from "../services";
 
 const emptyExam = {
   name: "",
@@ -12,7 +12,7 @@ export default function ExamAdminPage() {
   const [exams, setExams] = useState([]);
   const [results, setResults] = useState([]);
   const [courses, setCourses] = useState([]);
-  const [allStudents, setAllStudents] = useState([]);
+  const [studentsForClass, setStudentsForClass] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const [query, setQuery] = useState("");
@@ -42,12 +42,8 @@ export default function ExamAdminPage() {
   useEffect(() => {
     (async () => {
       try {
-        const [c, s] = await Promise.all([
-          coursesService.list({ onlyActive: true }),
-          studentsService.list({ onlyActive: true })
-        ]);
+        const c = await coursesService.list({ onlyActive: true });
         setCourses(c);
-        setAllStudents(s);
       } catch {
         /* ignore */
       }
@@ -75,10 +71,44 @@ export default function ExamAdminPage() {
     [exams, selectedExamId]
   );
 
-  const studentsForSelected = useMemo(() => {
-    if (!selectedExam) return [];
-    return allStudents.filter((s) => s.className === selectedExam.className);
-  }, [selectedExam, allStudents]);
+  useEffect(() => {
+    if (!selectedExam) {
+      setStudentsForClass([]);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        let classId = selectedExam.classId;
+        if (!classId && selectedExam.className) {
+          const classes = await classesService.list({ onlyActive: true });
+          const normalized = String(selectedExam.className).trim().toLowerCase();
+          const match = classes.find((c) => String(c.name || "").trim().toLowerCase() === normalized);
+          classId = match?.id ?? null;
+        }
+        if (!classId) {
+          if (!cancelled) setStudentsForClass([]);
+          return;
+        }
+
+        const stu = await studentsService.list({
+          onlyActive: true,
+          classId,
+          limit: 100
+        });
+        if (!cancelled) setStudentsForClass(stu);
+      } catch (err) {
+        if (!cancelled) {
+          alert(err?.message || "Sınıf öğrencileri yüklenemedi.");
+          setStudentsForClass([]);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedExam]);
 
   useEffect(() => {
     if (!selectedExamId) return;
@@ -360,7 +390,7 @@ export default function ExamAdminPage() {
                 </tr>
               ) : null}
 
-              {selectedExam && studentsForSelected.length === 0 ? (
+              {selectedExam && studentsForClass.length === 0 ? (
                 <tr>
                   <td colSpan={2} className="muted">
                     Bu sınıfta aktif öğrenci yok.
@@ -368,7 +398,7 @@ export default function ExamAdminPage() {
                 </tr>
               ) : null}
 
-              {studentsForSelected.map((s) => {
+              {studentsForClass.map((s) => {
                 const sid = String(s.id);
                 const v = draftScores[sid] ?? (scoreByStudentId.get(sid) == null ? "" : String(scoreByStudentId.get(sid)));
                 return (

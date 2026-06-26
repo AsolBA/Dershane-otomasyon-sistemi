@@ -25,8 +25,14 @@ export async function listStudents(filters, pagination) {
   let p = 1;
 
   if (filters.classId) {
-    conditions.push(`s.current_class_id = $${p++}`);
+    conditions.push(
+      `(s.current_class_id = $${p} OR EXISTS (
+        SELECT 1 FROM class_students cs
+        WHERE cs.student_id = s.id AND cs.class_id = $${p}
+      ))`,
+    );
     params.push(filters.classId);
+    p++;
   }
   if (filters.parentId) {
     conditions.push(`s.parent_id = $${p++}`);
@@ -47,7 +53,10 @@ export async function listStudents(filters, pagination) {
   if (filters.search) {
     const term = `%${filters.search.toLowerCase()}%`;
     conditions.push(
-      `(LOWER(u.email) LIKE $${p} OR LOWER(u.first_name) LIKE $${p} OR LOWER(u.last_name) LIKE $${p})`,
+      `(LOWER(u.email) LIKE $${p} OR LOWER(u.first_name) LIKE $${p} OR LOWER(u.last_name) LIKE $${p} OR EXISTS (
+        SELECT 1 FROM classes c
+        WHERE c.id = s.current_class_id AND LOWER(c.name) LIKE $${p}
+      ))`,
     );
     params.push(term);
     p++;
@@ -278,7 +287,14 @@ export async function createStudent(payload) {
           payload.isActive,
         ],
       );
-      return insertedStudent.rows[0].id;
+      const newStudentId = insertedStudent.rows[0].id;
+      if (payload.currentClassId) {
+        await client.query(
+          `INSERT INTO class_students (class_id, student_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+          [payload.currentClassId, newStudentId],
+        );
+      }
+      return newStudentId;
     } catch (error) {
       if (error.code === "23505") {
         throw new AppError(409, "STUDENT_NO_CONFLICT", "Ogrenci numarasi zaten kullaniliyor.");
@@ -407,6 +423,16 @@ export async function updateStudent(id, payload) {
         throw new AppError(409, "STUDENT_NO_CONFLICT", "Ogrenci numarasi zaten kullaniliyor.");
       }
       throw error;
+    }
+  }
+
+  if (payload.currentClassId !== undefined) {
+    await query(`DELETE FROM class_students WHERE student_id = $1`, [id]);
+    if (payload.currentClassId) {
+      await query(
+        `INSERT INTO class_students (class_id, student_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+        [payload.currentClassId, id],
+      );
     }
   }
 

@@ -1,5 +1,5 @@
 import { apiRequest } from "../httpClient";
-import { joinFullName, unwrapList } from "./mappers";
+import { formatDateOnly, joinFullName, unwrapList } from "./mappers";
 import * as classesApi from "./classes.api";
 
 const API_TO_UI_STATUS = {
@@ -32,14 +32,26 @@ export async function listAttendanceForStudent(studentId) {
   const params = new URLSearchParams({
     studentId: String(studentId),
     fromDate: "2000-01-01",
-    toDate: "2099-12-31"
+    toDate: "2099-12-31",
+    limit: "100"
   });
   const data = await apiRequest(`/attendance?${params.toString()}`);
-  return unwrapList(data).map((r) => ({
-    date: r.attendance_date ?? r.attendanceDate ?? r.date,
-    status: mapStatus(r.status),
-    studentId: String(r.student_id ?? r.studentId ?? studentId)
-  }));
+  return unwrapList(data).map((r) => {
+    const teacherFirst = r.teacher_first_name ?? r.teacherFirstName ?? "";
+    const teacherLast = r.teacher_last_name ?? r.teacherLastName ?? "";
+    return {
+      id: r.id,
+      scheduleId: r.schedule_id ?? r.scheduleId,
+      date: formatDateOnly(r.attendance_date ?? r.attendanceDate ?? r.date),
+      status: mapStatus(r.status),
+      studentId: String(r.student_id ?? r.studentId ?? studentId),
+      courseName: r.course_name ?? r.courseName ?? "",
+      teacherName:
+        r.teacher_name ??
+        r.teacherName ??
+        (joinFullName(teacherFirst, teacherLast) || "")
+    };
+  });
 }
 
 export async function listAttendanceForParent(linkedStudentId) {

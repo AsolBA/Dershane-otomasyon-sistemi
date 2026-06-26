@@ -57,7 +57,7 @@ export default function App() {
             <Route path="/schedules" element={<SchedulesPage />} />
           </Route>
 
-          <Route element={<RoleGate allow={[ROLES.ADMIN, ROLES.DIRECTOR, ROLES.TEACHER, ROLES.PARENT]} />}>
+          <Route element={<RoleGate allow={[ROLES.ADMIN, ROLES.DIRECTOR, ROLES.TEACHER, ROLES.PARENT, ROLES.STUDENT]} />}>
             <Route path="/attendance" element={<AttendancePage />} />
           </Route>
 

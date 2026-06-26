@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { studentsService } from "../services";
+import { normalizeEmail } from "../utils/email";
 
 export default function StudentImportModal({ rows, fileName, onClose, onImported }) {
   const [importing, setImporting] = useState(false);
@@ -13,8 +14,19 @@ export default function StudentImportModal({ rows, fileName, onClose, onImported
     setImporting(true);
     const failures = [];
     let successCount = 0;
+    const importedEmails = new Set();
 
     for (const row of validRows) {
+      const emailKey = normalizeEmail(row.studentEmail);
+      if (emailKey && importedEmails.has(emailKey)) {
+        failures.push({
+          rowNumber: row.rowNumber,
+          name: `${row.firstName} ${row.lastName}`,
+          message: "Aynı dosyada tekrar eden öğrenci atlandı."
+        });
+        continue;
+      }
+
       try {
         await studentsService.create({
           firstName: row.firstName,
@@ -24,6 +36,7 @@ export default function StudentImportModal({ rows, fileName, onClose, onImported
           parentPhone: row.parentPhone,
           active: true
         });
+        if (emailKey) importedEmails.add(emailKey);
         successCount += 1;
       } catch (err) {
         failures.push({

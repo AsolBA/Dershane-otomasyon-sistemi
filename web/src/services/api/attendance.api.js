@@ -1,5 +1,5 @@
 import { apiRequest } from "../httpClient.js";
-import { unwrapList } from "./mappers.js";
+import { formatDateOnly, joinFullName, unwrapList } from "./mappers.js";
 
 const UI_TO_API_STATUS = {
   PRESENT: "present",
@@ -23,6 +23,22 @@ function mapApiAttendanceRow(row) {
   };
 }
 
+function mapStudentAttendanceRow(row) {
+  const teacherFirst = row.teacher_first_name ?? row.teacherFirstName ?? "";
+  const teacherLast = row.teacher_last_name ?? row.teacherLastName ?? "";
+  return {
+    id: row.id,
+    scheduleId: row.schedule_id ?? row.scheduleId,
+    date: formatDateOnly(row.attendance_date ?? row.date),
+    status: API_TO_UI_STATUS[row.status] ?? String(row.status || "").toUpperCase(),
+    courseName: row.course_name ?? row.courseName ?? "",
+    teacherName:
+      row.teacher_name ??
+      row.teacherName ??
+      (joinFullName(teacherFirst, teacherLast) || "")
+  };
+}
+
 export async function listAttendanceForStudent(studentId) {
   if (!studentId) {
     throw new Error("Öğrenci bilgisi bulunamadı. Çıkış yapıp tekrar giriş deneyin.");
@@ -30,13 +46,11 @@ export async function listAttendanceForStudent(studentId) {
   const params = new URLSearchParams({
     studentId: String(studentId),
     fromDate: "2000-01-01",
-    toDate: "2099-12-31"
+    toDate: "2099-12-31",
+    limit: "100"
   });
   const data = await apiRequest(`/attendance?${params.toString()}`);
-  return unwrapList(data).map((row) => ({
-    date: row.attendance_date ?? row.date,
-    status: API_TO_UI_STATUS[row.status] ?? String(row.status || "").toUpperCase()
-  }));
+  return unwrapList(data).map(mapStudentAttendanceRow);
 }
 
 export async function getAttendance(scheduleId, date) {

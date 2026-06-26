@@ -5,9 +5,9 @@ function keyFor(studentId, month) {
 }
 
 const seedAttendance = [
-  { date: "2026-05-01", status: "PRESENT" },
-  { date: "2026-05-02", status: "ABSENT" },
-  { date: "2026-05-03", status: "LATE" }
+  { id: "att_1", date: "2026-05-01", status: "PRESENT", scheduleId: "sch_1", courseName: "Matematik", teacherName: "Burak Polat" },
+  { id: "att_2", date: "2026-05-02", status: "ABSENT", scheduleId: "sch_1", courseName: "Matematik", teacherName: "Burak Polat" },
+  { id: "att_3", date: "2026-05-03", status: "LATE", scheduleId: "sch_2", courseName: "Fizik", teacherName: "Ceren Aydin" }
 ];
 
 export async function listAttendanceForStudent(studentId) {
